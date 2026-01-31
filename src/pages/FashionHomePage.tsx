@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import defaultLogo from '@/assets/site-logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShoppingBag, Heart, User, LayoutDashboard, ChevronRight, ChevronLeft,
+  ShoppingBag, Heart, User, LayoutDashboard, ChevronRight, ChevronLeft, ChevronDown,
   Truck, Shield, RotateCcw, Star, ArrowRight, Headphones,
   Search, Menu, X, Eye, Zap, CreditCard, Package
 } from 'lucide-react';
@@ -312,26 +312,16 @@ export default function FashionHomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
-        <div className="container-custom py-3">
-          <div className="flex items-center justify-between gap-4">
-            {/* Mobile Menu */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-
+      {/* Header - Sokherhut Style */}
+      <header className="sticky top-0 z-50 bg-background shadow-sm">
+        <div className="container-custom py-4">
+          <div className="flex items-center justify-between gap-6">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
               <img
                 src={siteLogo}
                 alt={siteName}
-                className="h-10 w-auto object-contain"
+                className="h-8 md:h-10 w-auto object-contain"
                 loading="eager"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -341,66 +331,92 @@ export default function FashionHomePage() {
             </Link>
 
             {/* Navigation - Desktop */}
-            <nav className="hidden md:flex items-center gap-6">
-              <Link to="/" className="text-sm font-medium text-foreground hover:text-primary transition-colors">হোম</Link>
-              <Link to="/products?category=t-shirt" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">টি-শার্ট</Link>
-              <Link to="/products?category=jeans" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">জিন্স</Link>
-              <Link to="/products" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">সব প্রোডাক্ট</Link>
+            <nav className="hidden md:flex items-center gap-1">
+              <div className="relative group">
+                <button className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
+                  ক্যাটাগরি
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {/* Dropdown */}
+                <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="bg-card rounded-lg shadow-xl border border-border py-2 min-w-[180px]">
+                    {displayCategories.slice(0, 6).map((category: any) => (
+                      <Link
+                        key={category.id}
+                        to={`/products?category=${category.slug}`}
+                        className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-muted transition-colors"
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <Link to="/products?sale=true" className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                ফ্ল্যাশ সেল
+              </Link>
+              <Link to="/products" className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                সকল প্রডাক্ট
+              </Link>
             </nav>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden lg:flex flex-1 max-w-md mx-6">
+            <div className="hidden lg:flex flex-1 max-w-lg">
               <div className="relative w-full">
                 <Input
                   type="text"
                   placeholder="আপনার কাঙ্খিত পণ্য সার্চ করুন"
-                  className="pr-12 rounded-full border-2 focus:border-primary bg-secondary/30"
+                  className="pr-14 h-11 rounded-lg border border-border bg-background focus:border-primary placeholder:text-muted-foreground/70"
                 />
                 <Button 
                   size="icon" 
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary/90"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-10 rounded-md bg-orange-500 hover:bg-orange-600"
                 >
-                  <Search className="h-4 w-4 text-primary-foreground" />
+                  <Search className="h-4 w-4 text-white" />
                 </Button>
               </div>
             </div>
             
             {/* Actions */}
-            <div className="flex items-center gap-1 md:gap-2">
-              <Button variant="ghost" size="icon" className="lg:hidden hover:bg-primary/10">
+            <div className="flex items-center gap-1">
+              {/* Mobile Search Toggle */}
+              <Button variant="ghost" size="icon" className="lg:hidden">
                 <Search className="h-5 w-5" />
               </Button>
 
-              <Link to="/wishlist">
-                <Button variant="ghost" size="icon" className="relative hover:bg-primary/10">
-                  <Heart className={`h-5 w-5 ${wishlistItems.length > 0 ? 'fill-destructive text-destructive' : ''}`} />
-                  {wishlistItems.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-bold">
-                      {wishlistItems.length}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-
+              {/* Cart */}
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative hover:bg-primary/10"
+                className="relative"
                 onClick={() => dispatch(toggleCart())}
               >
                 <ShoppingBag className="h-5 w-5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                     {cartCount}
                   </span>
                 )}
               </Button>
 
-              <Link to={user ? (isAdmin ? '/admin' : '/my-account') : '/auth'}>
-                <Button variant="ghost" size="icon" className="hover:bg-primary/10">
-                  {user && isAdmin ? <LayoutDashboard className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                </Button>
-              </Link>
+              {/* Language/User - Desktop */}
+              <div className="hidden md:flex items-center gap-1">
+                <Link to={user ? (isAdmin ? '/admin' : '/my-account') : '/auth'}>
+                  <Button variant="ghost" size="icon">
+                    {user && isAdmin ? <LayoutDashboard className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Mobile Menu Toggle */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="md:hidden"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
             </div>
           </div>
         </div>
@@ -416,13 +432,30 @@ export default function FashionHomePage() {
             >
               <nav className="container-custom py-4">
                 <div className="mb-4">
-                  <Input type="text" placeholder="পণ্য খুঁজুন..." className="rounded-full" />
+                  <div className="relative">
+                    <Input type="text" placeholder="পণ্য খুঁজুন..." className="pr-12" />
+                    <Button size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 bg-orange-500 hover:bg-orange-600 rounded-md">
+                      <Search className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
                 </div>
-                <ul className="space-y-2">
-                  <li><Link to="/" className="block py-2 text-foreground hover:text-primary font-medium" onClick={() => setIsMobileMenuOpen(false)}>হোম</Link></li>
-                  <li><Link to="/products?category=t-shirt" className="block py-2 text-foreground hover:text-primary font-medium" onClick={() => setIsMobileMenuOpen(false)}>টি-শার্ট</Link></li>
-                  <li><Link to="/products?category=jeans" className="block py-2 text-foreground hover:text-primary font-medium" onClick={() => setIsMobileMenuOpen(false)}>জিন্স</Link></li>
-                  <li><Link to="/products" className="block py-2 text-foreground hover:text-primary font-medium" onClick={() => setIsMobileMenuOpen(false)}>সব প্রোডাক্ট</Link></li>
+                <ul className="space-y-1">
+                  <li><Link to="/" className="block py-2.5 px-3 rounded-lg text-foreground hover:bg-muted font-medium" onClick={() => setIsMobileMenuOpen(false)}>হোম</Link></li>
+                  <li><Link to="/products?sale=true" className="block py-2.5 px-3 rounded-lg text-foreground hover:bg-muted font-medium" onClick={() => setIsMobileMenuOpen(false)}>ফ্ল্যাশ সেল</Link></li>
+                  <li><Link to="/products" className="block py-2.5 px-3 rounded-lg text-foreground hover:bg-muted font-medium" onClick={() => setIsMobileMenuOpen(false)}>সকল প্রডাক্ট</Link></li>
+                  <li className="pt-2 border-t border-border mt-2">
+                    <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase">ক্যাটাগরি</p>
+                    {displayCategories.slice(0, 6).map((category: any) => (
+                      <Link
+                        key={category.id}
+                        to={`/products?category=${category.slug}`}
+                        className="block py-2 px-3 text-foreground hover:bg-muted rounded-lg"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </li>
                 </ul>
               </nav>
             </motion.div>
@@ -430,74 +463,45 @@ export default function FashionHomePage() {
         </AnimatePresence>
       </header>
 
-      {/* Hero Banner Slider */}
-      <section className="relative h-[40vh] md:h-[60vh] overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0"
-          >
-            <img
-              src={heroSlides[currentSlide].image}
-              alt={heroSlides[currentSlide].title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-            
-            <div className="absolute inset-0 z-20 flex items-center">
-              <div className="container-custom">
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="max-w-xl text-white"
-                >
-                  <Badge className="mb-4 bg-accent text-accent-foreground px-4 py-1">
-                    {heroSlides[currentSlide].badge}
-                  </Badge>
-                  <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-                    {heroSlides[currentSlide].title}
-                  </h1>
-                  <p className="text-lg md:text-xl text-white/90 mb-6">
-                    {heroSlides[currentSlide].subtitle}
-                  </p>
-                  <Button 
-                    size="lg"
-                    onClick={() => navigate(heroSlides[currentSlide].link)}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-8"
-                  >
-                    এখনই কিনুন <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Slider Controls */}
-        {heroSlides.length > 1 && (
-          <>
-            <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/40 transition-colors">
-              <ChevronLeft className="w-5 h-5 text-white" />
-            </button>
-            <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/40 transition-colors">
-              <ChevronRight className="w-5 h-5 text-white" />
-            </button>
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2">
-              {heroSlides.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-all ${index === currentSlide ? 'bg-primary w-8' : 'bg-white/50 hover:bg-white/70'}`}
+      {/* Hero Banner Slider - Sokherhut Style */}
+      <section className="py-6 md:py-8 bg-muted/30">
+        <div className="container-custom">
+          <div className="relative bg-muted/50 rounded-2xl overflow-hidden shadow-sm">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="relative aspect-[21/9] md:aspect-[21/8]"
+              >
+                <img
+                  src={heroSlides[currentSlide].image}
+                  alt={heroSlides[currentSlide].title}
+                  className="w-full h-full object-cover"
                 />
-              ))}
-            </div>
-          </>
-        )}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Slider Dots - Bottom Center */}
+            {heroSlides.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+                {heroSlides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentSlide 
+                        ? 'w-6 bg-primary' 
+                        : 'w-2 bg-foreground/30 hover:bg-foreground/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Features Bar - Sokherhut Style */}

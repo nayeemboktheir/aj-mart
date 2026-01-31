@@ -85,26 +85,26 @@ const OptimizedImage = memo(({ src, alt, className, priority = false }: {
 });
 OptimizedImage.displayName = 'OptimizedImage';
 
-// ====== Urgency Counter ======
+// ====== Urgency Banner ======
 const UrgencyBanner = memo(() => {
   const [viewers] = useState(() => Math.floor(Math.random() * 15) + 8);
   const [stock] = useState(() => Math.floor(Math.random() * 10) + 3);
   
   return (
-    <div className="bg-gradient-to-r from-primary via-primary to-accent text-primary-foreground py-2.5 px-4">
+    <div className="bg-[#1a0f0a] text-amber-100 py-2.5 px-4 border-b border-amber-900/30">
       <div className="container mx-auto flex items-center justify-center gap-6 text-sm font-medium flex-wrap">
         <span className="flex items-center gap-2">
           <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
           </span>
-          <Users className="h-4 w-4" />
-          <span className="font-bold">{viewers} জন</span> এখন দেখছেন
+          <Users className="h-4 w-4 text-amber-400" />
+          <span className="font-bold text-amber-300">{viewers} জন</span> এখন দেখছেন
         </span>
-        <span className="hidden sm:block text-white/50">|</span>
+        <span className="hidden sm:block text-amber-800">|</span>
         <span className="flex items-center gap-2">
-          <Flame className="h-4 w-4 animate-pulse" />
-          মাত্র <span className="font-bold text-white">{stock}টি</span> স্টকে আছে!
+          <Flame className="h-4 w-4 animate-pulse text-orange-500" />
+          মাত্র <span className="font-bold text-amber-300">{stock}টি</span> স্টকে আছে!
         </span>
       </div>
     </div>
@@ -112,7 +112,7 @@ const UrgencyBanner = memo(() => {
 });
 UrgencyBanner.displayName = 'UrgencyBanner';
 
-// ====== Hero Section ======
+// ====== Hero Section - Boys Fashion Style ======
 const HeroSection = memo(({ product, currentImage, setCurrentImage, onBuyNow }: { 
   product: ProductData; currentImage: number; setCurrentImage: (i: number) => void; onBuyNow: () => void;
 }) => {
@@ -120,6 +120,7 @@ const HeroSection = memo(({ product, currentImage, setCurrentImage, onBuyNow }: 
   const discount = product.original_price 
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100) 
     : 0;
+  const savings = product.original_price ? product.original_price - product.price : 0;
 
   useEffect(() => {
     if (images.length <= 1) return;
@@ -128,18 +129,19 @@ const HeroSection = memo(({ product, currentImage, setCurrentImage, onBuyNow }: 
   }, [currentImage, images.length, setCurrentImage]);
 
   return (
-    <section className="gradient-dark py-8 md:py-14">
+    <section className="bg-[#1a0f0a] py-8 md:py-12">
       <div className="container mx-auto px-4">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center max-w-5xl mx-auto">
-          {/* Image */}
+        <div className="grid md:grid-cols-2 gap-6 md:gap-10 items-center max-w-6xl mx-auto">
+          {/* Image Gallery - Left Side */}
           <div className="relative max-w-lg mx-auto w-full">
-            {discount > 0 && (
-              <Badge className="absolute top-4 left-4 z-20 bg-destructive text-destructive-foreground text-base px-4 py-2 font-bold shadow-lg">
-                -{discount}% ছাড়
-              </Badge>
-            )}
-            
-            <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-card ring-4 ring-white/10">
+            {/* Main Image */}
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900 shadow-2xl">
+              {discount > 0 && (
+                <span className="absolute top-4 left-4 z-20 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-full shadow-lg">
+                  -{discount}% ছাড়
+                </span>
+              )}
+              
               {images[currentImage] && (
                 <OptimizedImage src={images[currentImage]} alt={product.name} className="w-full h-full" priority />
               )}
@@ -148,24 +150,28 @@ const HeroSection = memo(({ product, currentImage, setCurrentImage, onBuyNow }: 
                 <>
                   <button
                     onClick={() => setCurrentImage((currentImage - 1 + images.length) % images.length)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/95 backdrop-blur-sm rounded-full p-2.5 shadow-xl hover:scale-110 transition-all border border-border"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-all"
                     aria-label="Previous"
                   >
-                    <ChevronLeft className="h-5 w-5 text-foreground" />
+                    <ChevronLeft className="h-5 w-5 text-gray-800" />
                   </button>
                   <button
                     onClick={() => setCurrentImage((currentImage + 1) % images.length)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/95 backdrop-blur-sm rounded-full p-2.5 shadow-xl hover:scale-110 transition-all border border-border"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-all"
                     aria-label="Next"
                   >
-                    <ChevronRight className="h-5 w-5 text-foreground" />
+                    <ChevronRight className="h-5 w-5 text-gray-800" />
                   </button>
+                  
+                  {/* Dots indicator */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/30 backdrop-blur-sm px-3 py-2 rounded-full">
                     {images.map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentImage(idx)}
-                        className={`h-2 rounded-full transition-all duration-300 ${idx === currentImage ? "bg-accent w-8" : "bg-white/60 w-2 hover:bg-white"}`}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          idx === currentImage ? "bg-white w-6" : "bg-white/50 w-2 hover:bg-white/80"
+                        }`}
                       />
                     ))}
                   </div>
@@ -180,9 +186,9 @@ const HeroSection = memo(({ product, currentImage, setCurrentImage, onBuyNow }: 
                   <button
                     key={idx}
                     onClick={() => setCurrentImage(idx)}
-                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
+                    className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
                       idx === currentImage 
-                        ? "border-accent scale-110 shadow-lg ring-2 ring-accent/30" 
+                        ? "border-amber-400 scale-110 shadow-lg shadow-amber-500/30" 
                         : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
                     }`}
                   >
@@ -193,52 +199,66 @@ const HeroSection = memo(({ product, currentImage, setCurrentImage, onBuyNow }: 
             )}
           </div>
 
-          {/* Product Info */}
-          <div className="text-primary-foreground space-y-5 text-center md:text-left">
-            <div>
-              <span className="inline-block bg-accent/20 text-accent px-3 py-1 rounded-full text-sm font-medium mb-3">
-                🔥 হট সেলিং প্রোডাক্ট
-              </span>
-              <h1 className="text-3xl md:text-5xl font-bold leading-tight">{product.name}</h1>
-            </div>
+          {/* Product Info - Right Side */}
+          <div className="text-white space-y-4 text-center md:text-left">
+            {/* Hot Selling Badge */}
+            <span className="inline-flex items-center gap-1.5 bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-sm font-medium">
+              <Flame className="h-3.5 w-3.5" />
+              হট সেলিং প্রোডাক্ট
+            </span>
             
+            {/* Product Title */}
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-amber-50">
+              {product.name}
+            </h1>
+            
+            {/* Short Description */}
             {product.short_description && (
-              <p className="text-base md:text-lg text-primary-foreground/80 leading-relaxed">{product.short_description}</p>
+              <p className="text-base md:text-lg text-amber-100/70 leading-relaxed">
+                {product.short_description}
+              </p>
             )}
 
-            {/* Price */}
-            <div className="flex items-baseline gap-4 flex-wrap py-3 px-5 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 justify-center md:justify-start">
-              <span className="text-4xl md:text-5xl font-bold text-accent">৳{product.price.toLocaleString()}</span>
+            {/* Price Box */}
+            <div className="flex items-center gap-3 flex-wrap py-4 px-5 bg-gradient-to-r from-amber-900/30 to-amber-800/20 rounded-xl border border-amber-700/30 justify-center md:justify-start">
+              <span className="text-4xl md:text-5xl font-bold text-amber-400">
+                ৳{product.price.toLocaleString()}
+              </span>
               {product.original_price && product.original_price > product.price && (
-                <span className="text-xl text-primary-foreground/50 line-through">৳{product.original_price.toLocaleString()}</span>
-              )}
-              {discount > 0 && (
-                <Badge className="bg-green-500 text-white font-bold px-3 py-1">
-                  ৳{(product.original_price! - product.price).toLocaleString()} সেভ!
-                </Badge>
+                <>
+                  <span className="text-xl text-amber-100/40 line-through">
+                    ৳{product.original_price.toLocaleString()}
+                  </span>
+                  <span className="bg-green-500 text-white text-sm font-bold px-2.5 py-1 rounded-full">
+                    ৳{savings.toLocaleString()} সেভ!
+                  </span>
+                </>
               )}
             </div>
 
-            {/* CTA */}
+            {/* CTA Button */}
             <Button
               onClick={onBuyNow}
               size="lg"
-              className="w-full md:w-auto px-12 py-7 text-xl font-bold bg-gradient-to-r from-accent to-yellow-500 hover:from-yellow-500 hover:to-accent text-foreground rounded-2xl shadow-cta hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full md:w-auto px-10 py-6 text-xl font-bold bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-gray-900 rounded-xl shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <ShoppingBag className="mr-2 h-6 w-6" />
+              <ShoppingBag className="mr-2 h-5 w-5" />
               এখনই অর্ডার করুন
             </Button>
 
-            {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-3 pt-3">
+            {/* Trust Badges - 3 columns */}
+            <div className="grid grid-cols-3 gap-3 pt-2">
               {[
-                { icon: Shield, text: "১০০% গ্যারান্টি", color: "text-green-400" },
-                { icon: Truck, text: "সারাদেশে ডেলিভারি", color: "text-blue-400" },
-                { icon: Gift, text: "ক্যাশ অন ডেলিভারি", color: "text-purple-400" },
+                { icon: Shield, text: "১০০% গ্যারান্টি" },
+                { icon: Truck, text: "সারাদেশে ডেলিভারি" },
+                { icon: Gift, text: "ক্যাশ অন ডেলিভারি" },
               ].map((item, idx) => (
-                <div key={idx} className="text-center p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-colors">
-                  <item.icon className={`h-6 w-6 mx-auto mb-1.5 ${item.color}`} />
-                  <span className="text-xs font-medium text-primary-foreground/90">{item.text}</span>
+                <div 
+                  key={idx} 
+                  className="text-center p-3 rounded-xl bg-amber-900/20 border border-amber-800/30 hover:bg-amber-900/30 transition-colors"
+                >
+                  <item.icon className="h-5 w-5 mx-auto mb-1.5 text-amber-400" />
+                  <span className="text-xs font-medium text-amber-100/80">{item.text}</span>
                 </div>
               ))}
             </div>
@@ -250,18 +270,18 @@ const HeroSection = memo(({ product, currentImage, setCurrentImage, onBuyNow }: 
 });
 HeroSection.displayName = 'HeroSection';
 
-// ====== Features ======
+// ====== Features Banner - Yellow Strip ======
 const FeaturesBanner = memo(() => (
-  <section className="bg-gradient-to-r from-accent via-yellow-400 to-accent py-5 overflow-hidden relative">
-    <div className="container mx-auto px-4 relative">
-      <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+  <section className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 py-4 overflow-hidden">
+    <div className="container mx-auto px-4">
+      <div className="flex flex-wrap justify-center gap-3 md:gap-6">
         {[
           { text: "প্রিমিয়াম কোয়ালিটি", icon: "✨" },
           { text: "কালার গ্যারান্টি", icon: "🎨" },
           { text: "কমফোর্টেবল ফিট", icon: "👕" },
           { text: "ইজি এক্সচেঞ্জ", icon: "🔄" }
         ].map((item, idx) => (
-          <div key={idx} className="flex items-center gap-2 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-full text-foreground font-semibold text-sm shadow-sm hover:bg-white/70 transition-colors">
+          <div key={idx} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full text-gray-800 font-semibold text-sm shadow-sm hover:bg-white/80 transition-colors">
             <span>{item.icon}</span>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <span>{item.text}</span>
@@ -273,22 +293,22 @@ const FeaturesBanner = memo(() => (
 ));
 FeaturesBanner.displayName = 'FeaturesBanner';
 
-// ====== Gallery ======
+// ====== Gallery - Dark Theme ======
 const GallerySection = memo(({ images }: { images: string[] }) => {
   if (!images || images.length < 2) return null;
   return (
-    <section className="py-12 md:py-16 gradient-elegant">
+    <section className="py-12 md:py-16 bg-[#0f0805]">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <span className="inline-block bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-3">
+            <span className="inline-block bg-amber-500/20 text-amber-400 px-4 py-1.5 rounded-full text-sm font-medium mb-3">
               📸 গ্যালারি
             </span>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground">প্রোডাক্ট গ্যালারি</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-amber-50">প্রোডাক্ট গ্যালারি</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {images.slice(0, 6).map((img, idx) => (
-              <div key={idx} className="group aspect-square rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ring-1 ring-border">
+              <div key={idx} className="group aspect-square rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ring-1 ring-amber-800/30">
                 <OptimizedImage src={img} alt="" className="w-full h-full group-hover:scale-110 transition-transform duration-500" />
               </div>
             ))}
@@ -321,14 +341,14 @@ const VideoSection = memo(({ videoUrl }: { videoUrl?: string }) => {
   const aspectInfo = isRawHtml ? extractAspectInfo(raw) : { aspectRatio: 16/9, isPortrait: false };
 
   return (
-    <section className="py-10 md:py-16 gradient-dark">
+    <section className="py-10 md:py-16 bg-[#1a0f0a]">
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
-          <span className="inline-flex items-center gap-2 bg-primary/20 text-primary-foreground px-4 py-1.5 rounded-full text-sm font-medium mb-3">
+          <span className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-400 px-4 py-1.5 rounded-full text-sm font-medium mb-3">
             <Play className="h-4 w-4" />
             ভিডিও দেখুন
           </span>
-          <h2 className="text-2xl md:text-3xl font-bold text-white">প্রোডাক্ট ভিডিও</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-amber-50">প্রোডাক্ট ভিডিও</h2>
         </div>
 
         <div className={`max-w-3xl mx-auto ${aspectInfo.isPortrait ? "max-w-sm" : ""}`}>
@@ -368,29 +388,28 @@ const VideoSection = memo(({ videoUrl }: { videoUrl?: string }) => {
 });
 VideoSection.displayName = "VideoSection";
 
-// ====== Product Description ======
+// ====== Product Description - Dark Theme ======
 const ProductDescriptionSection = memo(({ description }: { description?: string }) => {
   if (!description || !description.trim()) return null;
   
-  // Parse description - split by newlines and handle bullet points
   const lines = description.split('\n').filter(line => line.trim());
   
   return (
-    <section className="py-10 md:py-16 bg-gradient-to-b from-white to-gray-50">
+    <section className="py-10 md:py-16 bg-[#0f0805]">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-3">
+            <span className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-400 px-4 py-1.5 rounded-full text-sm font-medium mb-3">
               📋 বিস্তারিত
             </span>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground font-bengali">প্রোডাক্ট বিবরণ</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-amber-50">প্রোডাক্ট বিবরণ</h2>
           </div>
           
           {/* Description Cards */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-accent p-4">
-              <h3 className="text-lg font-bold text-primary-foreground font-bengali">
+          <div className="bg-[#1a0f0a] rounded-2xl shadow-xl border border-amber-800/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-600 to-amber-500 p-4">
+              <h3 className="text-lg font-bold text-white">
                 এই প্রোডাক্টের বৈশিষ্ট্য
               </h3>
             </div>
@@ -398,7 +417,6 @@ const ProductDescriptionSection = memo(({ description }: { description?: string 
             <div className="p-6">
               <ul className="space-y-3">
                 {lines.map((line, idx) => {
-                  // Remove ALL leading emoji/bullet/special chars including diamond ◊
                   const cleanLine = line
                     .replace(/^[\s◊◆●○▪▫•✓✔✅👉👍🔘🌴\-\*\u25CA\u25C6\u25CF\u25CB\u25AA\u25AB]+/g, '')
                     .trim();
@@ -407,9 +425,9 @@ const ProductDescriptionSection = memo(({ description }: { description?: string 
                   return (
                     <li 
                       key={idx}
-                      className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 hover:shadow-md transition-all duration-300"
+                      className="p-4 rounded-xl bg-amber-900/20 border border-amber-800/30 hover:bg-amber-900/30 transition-all duration-300"
                     >
-                      <span className="text-gray-800 font-medium text-base md:text-lg leading-relaxed font-bengali">
+                      <span className="text-amber-100 font-medium text-base md:text-lg leading-relaxed">
                         {cleanLine}
                       </span>
                     </li>
@@ -419,8 +437,8 @@ const ProductDescriptionSection = memo(({ description }: { description?: string 
             </div>
             
             {/* Trust Footer */}
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-4 border-t border-amber-100">
-              <p className="text-center text-amber-700 font-medium font-bengali">
+            <div className="bg-gradient-to-r from-amber-700/30 to-amber-600/30 p-4 border-t border-amber-700/30">
+              <p className="text-center text-amber-300 font-medium">
                 ১০০% কোয়ালিটি গ্যারান্টি সহ
               </p>
             </div>
@@ -432,24 +450,24 @@ const ProductDescriptionSection = memo(({ description }: { description?: string 
 });
 ProductDescriptionSection.displayName = 'ProductDescriptionSection';
 
-// ====== Delivery Info ======
+// ====== Delivery Info - Dark Theme ======
 const DeliverySection = memo(() => (
-  <section className="py-8 md:py-12 bg-white">
+  <section className="py-8 md:py-12 bg-[#1a0f0a]">
     <div className="container mx-auto px-4">
-      <h2 className="text-xl md:text-2xl font-bold text-center text-gray-900 mb-6">ডেলিভারি ও পেমেন্ট</h2>
+      <h2 className="text-xl md:text-2xl font-bold text-center text-amber-50 mb-6">ডেলিভারি ও পেমেন্ট</h2>
       <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
         {[
           { icon: Truck, title: "ঢাকায় ৮০৳", sub: "বাইরে ১৩০৳", color: "bg-blue-500" },
           { icon: Clock, title: "১-৩ দিনে", sub: "ডেলিভারি", color: "bg-green-500" },
           { icon: Shield, title: "ক্যাশ অন", sub: "ডেলিভারি", color: "bg-purple-500" },
         ].map((item, idx) => (
-          <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+          <div key={idx} className="flex items-center gap-3 p-4 bg-amber-900/20 rounded-xl border border-amber-800/30">
             <div className={`w-12 h-12 ${item.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
               <item.icon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-900">{item.title}</p>
-              <p className="text-sm text-gray-600">{item.sub}</p>
+              <p className="font-bold text-amber-100">{item.title}</p>
+              <p className="text-sm text-amber-200/70">{item.sub}</p>
             </div>
           </div>
         ))}
@@ -518,12 +536,12 @@ const CheckoutSection = memo(({ product, onSubmit, isSubmitting }: {
   }, []);
 
   return (
-    <section id="checkout" className="py-8 md:py-12 bg-gradient-to-b from-gray-100 to-white">
+    <section id="checkout" className="py-8 md:py-12 bg-gradient-to-b from-[#0f0805] to-[#1a0f0a]">
       <div className="container mx-auto px-4">
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">অর্ডার করুন</h2>
-            <p className="text-gray-600 text-sm mt-1">পণ্য হাতে পেয়ে মূল্য পরিশোধ করুন</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-amber-50">অর্ডার করুন</h2>
+            <p className="text-amber-200/70 text-sm mt-1">পণ্য হাতে পেয়ে মূল্য পরিশোধ করুন</p>
           </div>
 
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -678,15 +696,15 @@ const CheckoutSection = memo(({ product, onSubmit, isSubmitting }: {
             </Button>
 
             {/* Contact */}
-            <div className="text-center text-sm text-gray-600 space-y-1">
+            <div className="text-center text-sm text-amber-200/70 space-y-1">
               <p>
-                কল করুন: <a href="tel:+8801995909243" className="font-bold text-gray-900">01995909243</a>
+                কল করুন: <a href="tel:+8801995909243" className="font-bold text-amber-300">01995909243</a>
               </p>
               <a 
                 href="https://wa.me/8801995909243"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-green-600 font-medium"
+                className="inline-flex items-center gap-1 text-green-400 font-medium hover:text-green-300"
               >
                 <MessageCircle className="h-4 w-4" />
                 WhatsApp
@@ -827,7 +845,7 @@ const ProductLandingPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#1a0f0a]">
         <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -835,15 +853,16 @@ const ProductLandingPage = () => {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <h1 className="text-xl font-bold mb-4">প্রোডাক্ট পাওয়া যায়নি</h1>
-        <Button onClick={() => navigate("/")} className="bg-amber-500 hover:bg-amber-600">হোম পেজে যান</Button>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a0f0a] p-4">
+        <h1 className="text-xl font-bold mb-4 text-amber-50">প্রোডাক্ট পাওয়া যায়নি</h1>
+        <Button onClick={() => navigate("/")} className="bg-amber-500 hover:bg-amber-600 text-gray-900">হোম পেজে যান</Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#0f0805]">
+      <UrgencyBanner />
       <HeroSection product={product} currentImage={currentImage} setCurrentImage={setCurrentImage} onBuyNow={scrollToCheckout} />
       <FeaturesBanner />
       <ProductDescriptionSection description={product.long_description} />
@@ -856,10 +875,10 @@ const ProductLandingPage = () => {
       
       {/* Floating CTA - hidden when checkout is visible */}
       {showFloatingCta && (
-        <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-sm border-t md:hidden z-50 safe-area-inset-bottom">
+        <div className="fixed bottom-0 left-0 right-0 p-3 bg-[#1a0f0a]/95 backdrop-blur-sm border-t border-amber-800/30 md:hidden z-50 safe-area-inset-bottom">
           <Button
             onClick={scrollToCheckout}
-            className="w-full h-12 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-gray-900 rounded-xl shadow-lg"
+            className="w-full h-12 text-base font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-gray-900 rounded-xl shadow-lg shadow-amber-500/30"
           >
             <ShoppingBag className="mr-2 h-5 w-5" />
             এখনই অর্ডার করুন

@@ -11,7 +11,12 @@ import {
   ChevronRight,
   Loader2,
   Phone,
-  CheckCircle2
+  CheckCircle2,
+  Star,
+  Truck,
+  Shield,
+  RotateCcw,
+  Share2
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -27,6 +32,7 @@ import { toast } from 'sonner';
 import { useFacebookPixel } from '@/hooks/useFacebookPixel';
 import { useServerTracking } from '@/hooks/useServerTracking';
 import { supabase } from '@/integrations/supabase/client';
+import { getDemoProductBySlug, getRelatedDemoProducts, demoProducts } from '@/data/demoProducts';
 
 const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -106,22 +112,38 @@ const ProductDetailPage = () => {
       if (!slug) return;
       setIsLoading(true);
       try {
+        // First try to fetch from database
         const [productData, allProducts] = await Promise.all([
           fetchProductBySlug(slug),
           fetchProducts(),
         ]);
-        setProduct(productData);
-        // Do NOT auto-select variation - customer should select manually
-        setSelectedVariation(undefined);
+        
         if (productData) {
+          setProduct(productData);
+          setSelectedVariation(undefined);
           setRelatedProducts(
             allProducts
               .filter((p) => p.category === productData.category && p.id !== productData.id)
               .slice(0, 4)
           );
+        } else {
+          // Fallback to demo products
+          const demoProduct = getDemoProductBySlug(slug);
+          if (demoProduct) {
+            setProduct(demoProduct);
+            setSelectedVariation(undefined);
+            setRelatedProducts(getRelatedDemoProducts(demoProduct.category, demoProduct.id));
+          }
         }
       } catch (error) {
         console.error('Failed to load product:', error);
+        // Try demo products on error
+        const demoProduct = getDemoProductBySlug(slug);
+        if (demoProduct) {
+          setProduct(demoProduct);
+          setSelectedVariation(undefined);
+          setRelatedProducts(getRelatedDemoProducts(demoProduct.category, demoProduct.id));
+        }
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +166,7 @@ const ProductDetailPage = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Product Not Found</h1>
           <Button asChild>
-            <Link to="/products">Back to Products</Link>
+            <Link to="/">Back to Home</Link>
           </Button>
         </div>
       </div>

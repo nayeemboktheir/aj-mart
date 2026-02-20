@@ -663,7 +663,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                       {product.images && product.images.length > 1 && (
                         <div>
                           <label className="text-sm font-semibold text-gray-700 mb-2 block">🎨 কালার সিলেক্ট করুন</label>
-                          <div className="flex flex-wrap gap-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap gap-3">
                             {product.images.map((img, idx) => {
                               const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
                               const colorName = colorNames[idx] || `Color ${idx + 1}`;

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import {
   Accordion,
   AccordionContent,
@@ -88,31 +90,35 @@ const LandingPage = () => {
   const theme = (page.theme_settings as unknown as ThemeSettings) || DEFAULT_THEME;
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        fontFamily: theme.fontFamily,
-        backgroundColor: theme.backgroundColor,
-        color: theme.textColor,
-      }}
-    >
-      {/* SEO Meta */}
-      {page.meta_title && <title>{page.meta_title}</title>}
+    <>
+      <Header />
+      <div
+        className="min-h-screen"
+        style={{
+          fontFamily: theme.fontFamily,
+          backgroundColor: theme.backgroundColor,
+          color: theme.textColor,
+        }}
+      >
+        {/* SEO Meta */}
+        {page.meta_title && <title>{page.meta_title}</title>}
 
-      {/* Custom CSS */}
-      {page.custom_css && <style>{page.custom_css}</style>}
+        {/* Custom CSS */}
+        {page.custom_css && <style>{page.custom_css}</style>}
 
-      {/* Render Sections */}
-      {sections.length === 0 ? (
-        <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-          <p>This page has no content yet.</p>
-        </div>
-      ) : (
-        sections.map((section) => (
-          <SectionRenderer key={section.id} section={section} theme={theme} slug={slug || ""} />
-        ))
-      )}
-    </div>
+        {/* Render Sections */}
+        {sections.length === 0 ? (
+          <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+            <p>This page has no content yet.</p>
+          </div>
+        ) : (
+          sections.map((section) => (
+            <SectionRenderer key={section.id} section={section} theme={theme} slug={slug || ""} />
+          ))
+        )}
+      </div>
+      <Footer />
+    </>
   );
 };
 

@@ -620,94 +620,107 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
               </div>
             )}
             
-            {/* Product Selection */}
+            {/* Product Selection - Color & Size */}
             {products.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4">প্রোডাক্ট সিলেক্ট করে বাকি তথ্য দিনঃ</h3>
-                <div className="bg-white rounded-xl border overflow-hidden">
-                  <div className="hidden md:grid grid-cols-[auto_1fr_auto_auto] gap-4 p-3 bg-gray-50 border-b text-sm font-medium text-gray-600">
-                    <span>Product</span>
-                    <span></span>
-                    <span>Quantity</span>
-                    <span>Price</span>
-                  </div>
-                  {products.map((product) => (
-                    <div key={product.id}>
-                      {product.variations.map((variation) => (
-                        <div 
-                          key={variation.id} 
-                          className={`flex flex-col md:grid md:grid-cols-[auto_1fr_auto_auto] gap-3 md:gap-4 p-4 items-start md:items-center cursor-pointer transition-colors ${
-                            orderForm.selectedVariationId === variation.id 
-                              ? 'bg-amber-50 border-l-4 border-amber-500' 
-                              : 'hover:bg-gray-50 border-l-4 border-transparent'
-                          }`}
-                          onClick={() => setOrderForm(prev => ({ ...prev, selectedVariationId: variation.id }))}
-                        >
-                          <div className="flex items-center gap-3 w-full md:w-auto md:contents">
-                            <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                              {product.images?.[0] && (
-                                <img 
-                                  src={product.images[0]} 
-                                  alt={product.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-sm md:text-base">{product.name}</p>
-                              <p className="text-xs md:text-sm text-gray-500">Weight: {variation.name}</p>
-                            </div>
-                            <div className="text-right md:hidden">
-                              <p className="font-bold text-base" style={{ color: settings.accentColor || '#b8860b' }}>
-                                ৳ {variation.price.toLocaleString()}
-                              </p>
-                              {variation.original_price && variation.original_price > variation.price && (
-                                <p className="text-xs text-gray-400 line-through">
-                                  ৳ {variation.original_price.toLocaleString()}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {orderForm.selectedVariationId === variation.id && (
-                            <div className="flex items-center gap-2 w-full md:w-auto justify-center md:justify-start">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOrderForm(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }));
-                                }}
-                                className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
-                              >
-                                −
-                              </button>
-                              <span className="w-8 text-center font-medium">{orderForm.quantity}</span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOrderForm(prev => ({ ...prev, quantity: prev.quantity + 1 }));
-                                }}
-                                className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
-                              >
-                                +
-                              </button>
-                            </div>
+              <div className="mb-8 space-y-6">
+                {products.map((product) => {
+                  const selectedVar = product.variations.find(v => v.id === orderForm.selectedVariationId);
+                  const displayPrice = selectedVar?.price || product.variations[0]?.price || 0;
+                  const displayOriginal = selectedVar?.original_price || product.variations[0]?.original_price;
+
+                  return (
+                    <div key={product.id} className="bg-white rounded-2xl border p-5 space-y-5">
+                      {/* Product Header */}
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 ring-2 ring-gray-200">
+                          {product.images?.[0] && (
+                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                           )}
-                          <div className="hidden md:block text-right">
-                            <p className="font-bold text-lg" style={{ color: settings.accentColor || '#b8860b' }}>
-                              ৳ {variation.price.toLocaleString()}
-                            </p>
-                            {variation.original_price && variation.original_price > variation.price && (
-                              <p className="text-sm text-gray-400 line-through">
-                                ৳ {variation.original_price.toLocaleString()}
-                              </p>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-base md:text-lg">{product.name}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xl font-bold" style={{ color: settings.accentColor || '#ef4444' }}>
+                              ৳ {displayPrice.toLocaleString()}
+                            </span>
+                            {displayOriginal && displayOriginal > displayPrice && (
+                              <span className="text-sm text-gray-400 line-through">৳ {displayOriginal.toLocaleString()}</span>
                             )}
                           </div>
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Color Selection */}
+                      {product.images && product.images.length > 1 && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">🎨 কালার সিলেক্ট করুন</label>
+                          <div className="flex flex-wrap gap-2">
+                            {product.images.map((img, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setOrderForm(prev => ({ ...prev, selectedColor: idx }))}
+                                className={`w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                                  (orderForm as any).selectedColor === idx
+                                    ? 'border-amber-500 ring-2 ring-amber-300 scale-105 shadow-md'
+                                    : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                                }`}
+                              >
+                                <img src={img} alt={`Color ${idx + 1}`} className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Size Selection - Single Row */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">📏 সাইজ সিলেক্ট করুন</label>
+                        <div className="flex flex-wrap gap-2">
+                          {product.variations.map((variation) => {
+                            const sizeLabel = variation.name.replace(/^Size\s*/i, '').replace(/^Weight:\s*/i, '');
+                            const isSelected = orderForm.selectedVariationId === variation.id;
+                            return (
+                              <button
+                                key={variation.id}
+                                type="button"
+                                onClick={() => setOrderForm(prev => ({ ...prev, selectedVariationId: variation.id }))}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 min-w-[52px] ${
+                                  isSelected
+                                    ? 'bg-gray-900 text-white border-gray-900 shadow-md scale-105'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                                }`}
+                              >
+                                {sizeLabel}
+                                {variation.price !== product.variations[0]?.price && (
+                                  <span className="block text-[10px] mt-0.5 opacity-80">৳{variation.price}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Quantity */}
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700 mb-2 block">🛒 পরিমাণ</label>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setOrderForm(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                            className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 text-lg font-bold transition-colors"
+                          >−</button>
+                          <span className="w-10 text-center font-bold text-lg">{orderForm.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => setOrderForm(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                            className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 text-lg font-bold transition-colors"
+                          >+</button>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             )}
             

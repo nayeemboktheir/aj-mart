@@ -186,7 +186,7 @@ export const OrderInvoice = forwardRef<HTMLDivElement, OrderInvoiceProps>(
                       <p style={{ fontWeight: '600', margin: 0, fontSize: '14px' }}>{item.product_name}</p>
                       {item.variation_name && (
                         <p style={{ color: '#2563eb', fontSize: '12px', margin: '2px 0 0 0', fontWeight: '500' }}>
-                          Size: {item.variation_name}
+                          {item.variation_name}
                         </p>
                       )}
                       <p style={{ color: '#c53030', fontSize: '12px', margin: '3px 0 0 0' }}>

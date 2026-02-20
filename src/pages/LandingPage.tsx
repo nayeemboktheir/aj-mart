@@ -177,14 +177,16 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   // Fetch products for checkout section
   useEffect(() => {
     if (section.type !== "checkout-form") return;
-    const settings = section.settings as { productIds?: string[] };
-    if (!settings.productIds || settings.productIds.length === 0) return;
+    const settings = section.settings as { productIds?: string[]; productId?: string };
+    // Support both productIds (array) and productId (single string)
+    const ids = settings.productIds?.length ? settings.productIds : settings.productId ? [settings.productId] : [];
+    if (ids.length === 0) return;
 
     const fetchProducts = async () => {
       const { data: productsData } = await supabase
         .from("products")
         .select("id, name, price, original_price, images")
-        .in("id", settings.productIds || []);
+        .in("id", ids);
 
       if (productsData) {
         const productsWithVariations = await Promise.all(

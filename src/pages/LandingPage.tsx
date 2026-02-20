@@ -662,7 +662,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                                 key={idx}
                                 type="button"
                                 onClick={() => setOrderForm(prev => ({ ...prev, selectedColor: idx }))}
-                                className={`w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                                className={`w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
                                   (orderForm as any).selectedColor === idx
                                     ? 'border-amber-500 ring-2 ring-amber-300 scale-105 shadow-md'
                                     : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'

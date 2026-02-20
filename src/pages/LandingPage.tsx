@@ -1,17 +1,37 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, ShieldCheck, Truck, Phone, MessageCircle } from "lucide-react";
+import { motion, useInView } from "framer-motion";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+
+// Animated section wrapper
+const AnimatedSection = ({ children, className, style, id }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; id?: string }) => {
+  const ref = useRef<HTMLElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  return (
+    <motion.section
+      ref={ref}
+      id={id}
+      className={className}
+      style={style}
+      initial={{ opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      {children}
+    </motion.section>
+  );
+};
 import { ShippingMethodSelector, ShippingZone, SHIPPING_RATES } from "@/components/checkout/ShippingMethodSelector";
 import { toast } from "sonner";
 import { getEmbedUrl as getVideoEmbedUrl, parseIframeHtml } from "@/lib/videoEmbed";
@@ -321,35 +341,37 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       const isRightImage = settings.layout === "right-image";
 
       const imageSection = (
-        <div className="relative">
+        <div className="relative group">
           {images.length > 0 ? (
-            <div className="relative aspect-[3/4] max-w-md mx-auto">
+            <div className="relative aspect-[3/4] max-w-md mx-auto overflow-hidden rounded-2xl shadow-2xl">
               <img
                 src={images[currentImage]}
                 alt={settings.title}
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
+              {/* Gradient overlay at bottom */}
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
               {images.length > 1 && (
                 <>
                   <button
                     onClick={() => setCurrentImage((p) => (p - 1 + images.length) % images.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 hover:bg-white transition-colors"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white hover:scale-110 transition-all"
                   >
-                    <ChevronLeft className="h-5 w-5" />
+                    <ChevronLeft className="h-5 w-5 text-gray-800" />
                   </button>
                   <button
                     onClick={() => setCurrentImage((p) => (p + 1) % images.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 hover:bg-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white hover:scale-110 transition-all"
                   >
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-5 w-5 text-gray-800" />
                   </button>
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                     {images.map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentImage(idx)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          idx === currentImage ? "bg-white" : "bg-white/50"
+                        className={`rounded-full transition-all duration-300 ${
+                          idx === currentImage ? "w-8 h-2.5 bg-white" : "w-2.5 h-2.5 bg-white/50 hover:bg-white/80"
                         }`}
                       />
                     ))}
@@ -363,65 +385,97 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
 
       const textSection = (
         <div className={`space-y-6 ${isCenter ? "text-center" : ""}`}>
-          <h1 className="text-3xl md:text-5xl font-bold" style={{ color: settings.textColor }}>
-            {settings.title}
-          </h1>
-          {settings.subtitle && (
-            <p className="text-lg opacity-80" style={{ color: settings.textColor }}>
-              {settings.subtitle}
-            </p>
-          )}
-          <div
-            className="flex items-baseline gap-3"
-            style={{ justifyContent: isCenter ? "center" : "flex-start" }}
+          <motion.h1 
+            className="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight" 
+            style={{ color: settings.textColor }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
           >
-            <span className="text-xl" style={{ color: theme.accentColor }}>
+            {settings.title}
+          </motion.h1>
+          {settings.subtitle && (
+            <motion.p 
+              className="text-lg md:text-xl opacity-80 leading-relaxed" 
+              style={{ color: settings.textColor }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.8 }}
+              transition={{ delay: 0.4 }}
+            >
+              {settings.subtitle}
+            </motion.p>
+          )}
+          <motion.div
+            className="flex items-baseline gap-3 flex-wrap"
+            style={{ justifyContent: isCenter ? "center" : "flex-start" }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <span className="text-lg font-medium" style={{ color: theme.accentColor }}>
               দাম
             </span>
-            <span className="text-4xl font-bold" style={{ color: theme.accentColor }}>
+            <span className="text-4xl md:text-5xl font-black" style={{ color: theme.accentColor }}>
               {settings.price ? `${settings.price}৳` : ""}
             </span>
             {settings.originalPrice && (
               <span
-                className="text-lg line-through opacity-50"
+                className="text-lg line-through opacity-40"
                 style={{ color: settings.textColor }}
               >
                 {settings.originalPrice}৳
               </span>
             )}
-          </div>
+            {settings.originalPrice && settings.price && (
+              <span className="ml-2 px-3 py-1 rounded-full text-xs font-bold text-white bg-red-500 animate-pulse">
+                {Math.round(((Number(settings.originalPrice) - Number(settings.price)) / Number(settings.originalPrice)) * 100)}% OFF
+              </span>
+            )}
+          </motion.div>
           {settings.buttonText && (
-            <Button
-              size="lg"
-              className="px-10 py-6 text-lg"
-              style={{
-                backgroundColor: theme.primaryColor,
-                color: "#fff",
-                borderRadius: theme.borderRadius,
-              }}
-              onClick={() => {
-                const target = document.getElementById("checkout");
-                if (target) target.scrollIntoView({ behavior: "smooth" });
-              }}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
             >
-              {settings.buttonText}
-            </Button>
+              <Button
+                size="lg"
+                className="px-10 py-7 text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all duration-300"
+                style={{
+                  backgroundColor: theme.accentColor || theme.primaryColor,
+                  color: "#fff",
+                  borderRadius: "12px",
+                }}
+                onClick={() => {
+                  const target = document.getElementById("checkout");
+                  if (target) target.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                {settings.buttonText}
+              </Button>
+            </motion.div>
           )}
 
           {settings.badges?.length > 0 && (
             <div
-              className="flex flex-wrap gap-6 mt-8"
+              className="flex flex-wrap gap-6 mt-8 pt-6 border-t border-gray-200"
               style={{ justifyContent: isCenter ? "center" : "flex-start" }}
             >
               {settings.badges.map((badge, idx) => (
-                <div key={idx} className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: settings.textColor }}>
+                <motion.div 
+                  key={idx} 
+                  className="text-center"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 + idx * 0.1 }}
+                >
+                  <div className="text-2xl md:text-3xl font-black" style={{ color: theme.accentColor || settings.textColor }}>
                     {badge.text}
                   </div>
-                  <div className="text-sm opacity-70" style={{ color: settings.textColor }}>
+                  <div className="text-xs md:text-sm opacity-60 mt-1" style={{ color: settings.textColor }}>
                     {badge.subtext}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
@@ -429,14 +483,14 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       );
 
       return (
-        <section className="py-12 md:py-20 px-4" style={{ backgroundColor: settings.backgroundColor }}>
+        <AnimatedSection className="py-16 md:py-24 px-4" style={{ backgroundColor: settings.backgroundColor }}>
           {isCenter ? (
-            <div className="max-w-4xl mx-auto space-y-8">
+            <div className="max-w-4xl mx-auto space-y-10">
               {imageSection}
               {textSection}
             </div>
           ) : (
-            <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
+            <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
               {isRightImage ? (
                 <>
                   {textSection}
@@ -450,7 +504,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
               )}
             </div>
           )}
-        </section>
+        </AnimatedSection>
       );
     }
 
@@ -472,13 +526,13 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       };
       
       return (
-        <section
-          className="py-12 px-4"
+        <AnimatedSection
+          className="py-14 px-4"
           style={{ backgroundColor: settings.backgroundColor, color: settings.textColor }}
         >
           <div className="max-w-6xl mx-auto">
             {settings.title && (
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">{settings.title}</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">{settings.title}</h2>
             )}
             <div
               className={`grid gap-4 md:gap-6 ${
@@ -489,17 +543,22 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
               }`}
             >
               {(settings.badges || []).map((badge, idx) => (
-                <div
+                <motion.div
                   key={idx}
-                  className="text-center p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 shadow-sm"
+                  className="text-center p-5 rounded-2xl bg-white/80 backdrop-blur border border-gray-100 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.08 }}
                 >
-                  <div className="text-lg md:text-xl font-bold mb-1 text-gray-800">{cleanText(badge.title)}</div>
-                  {badge.description && <div className="text-sm opacity-80">{cleanText(badge.description)}</div>}
-                </div>
+                  {badge.icon && <span className="text-3xl mb-2 block">{badge.icon}</span>}
+                  <div className="text-lg md:text-xl font-bold mb-1" style={{ color: theme.accentColor || '#333' }}>{cleanText(badge.title)}</div>
+                  {badge.description && <div className="text-sm opacity-70">{cleanText(badge.description)}</div>}
+                </motion.div>
               ))}
             </div>
           </div>
-        </section>
+        </AnimatedSection>
       );
     }
 
@@ -546,13 +605,13 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       const total = subtotal + shippingCost;
 
       return (
-        <section
+        <AnimatedSection
           id="checkout"
-          className="py-12 px-4"
+          className="py-16 px-4"
           style={{ backgroundColor: settings.backgroundColor }}
         >
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-8">{settings.title}</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">{settings.title}</h2>
             
             {/* Free Delivery Message */}
             {settings.freeDeliveryMessage && (
@@ -743,18 +802,23 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                 </div>
               )}
 
-              <Button
-                type="submit"
-                className="w-full h-14 text-lg font-bold mt-6"
-                style={{
-                  backgroundColor: settings.accentColor || theme.accentColor,
-                  color: "#fff",
-                  borderRadius: theme.borderRadius,
-                }}
-                disabled={isSubmitting || !selected}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
               >
-                {isSubmitting ? "Processing..." : `${settings.buttonText}  ৳ ${total.toLocaleString()}`}
-              </Button>
+                <Button
+                  type="submit"
+                  className="w-full h-16 text-lg font-bold mt-6 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 rounded-2xl"
+                  style={{
+                    backgroundColor: settings.accentColor || theme.accentColor,
+                    color: "#fff",
+                  }}
+                  disabled={isSubmitting || !selected}
+                >
+                  {isSubmitting ? "Processing..." : `${settings.buttonText}  ৳ ${total.toLocaleString()}`}
+                </Button>
+              </motion.div>
 
               {/* Contact Options */}
               <div className="mt-4 text-center space-y-2">
@@ -777,7 +841,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
               </div>
             </form>
           </div>
-        </section>
+        </AnimatedSection>
       );
     }
 
@@ -837,7 +901,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       const columns = settings.columns || 3;
       
       return (
-        <section className="py-8 px-4">
+        <AnimatedSection className="py-12 px-4">
           <div
             className={`max-w-6xl mx-auto grid gap-4 ${
               columns === 2 ? 'grid-cols-1 sm:grid-cols-2' :
@@ -847,12 +911,19 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
             }`}
           >
             {(settings.images || []).map((img, idx) => (
-              <div key={idx} className={aspectClass[settings.aspectRatio] || "aspect-square"}>
-                <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
-              </div>
+              <motion.div 
+                key={idx} 
+                className={`${aspectClass[settings.aspectRatio] || "aspect-square"} overflow-hidden rounded-2xl shadow-lg group`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.08 }}
+              >
+                <img src={img} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              </motion.div>
             ))}
           </div>
-        </section>
+        </AnimatedSection>
       );
     }
 
@@ -907,42 +978,55 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       };
 
       return (
-        <section className="py-12 px-4" style={{ backgroundColor: theme.secondaryColor }}>
+        <AnimatedSection className="py-16 px-4" style={{ backgroundColor: theme.secondaryColor }}>
           <div className="max-w-6xl mx-auto">
             {settings.title && (
-              <h2 className="text-2xl font-bold text-center mb-8">{settings.title}</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">{settings.title}</h2>
             )}
             <div
-              className={`grid gap-4 md:gap-6 ${
+              className={`grid gap-5 md:gap-6 ${
                 (settings.columns || 3) === 2 ? 'grid-cols-1 sm:grid-cols-2' :
                 (settings.columns || 3) === 3 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' :
                 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
               }`}
             >
               {(settings.items || []).map((item, idx) => (
-                <div key={idx} className="bg-white p-6 rounded-lg shadow-sm">
-                  <p className="mb-4 text-muted-foreground">&ldquo;{item.content}&rdquo;</p>
-                  <div className="flex items-center gap-3">
+                <motion.div 
+                  key={idx} 
+                  className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-50"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  {/* Star rating */}
+                  <div className="flex gap-1 mb-3">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="mb-5 text-gray-600 italic leading-relaxed">&ldquo;{item.content}&rdquo;</p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
                     {item.avatar ? (
-                      <img src={item.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      <img src={item.avatar} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100" />
                     ) : (
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: theme.primaryColor + "20" }}
+                        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold"
+                        style={{ backgroundColor: theme.accentColor || theme.primaryColor }}
                       >
-                        <span className="font-medium">{item.name?.charAt(0)}</span>
+                        {item.name?.charAt(0)}
                       </div>
                     )}
                     <div>
-                      <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-muted-foreground">{item.role}</div>
+                      <div className="font-semibold text-gray-800">{item.name}</div>
+                      <div className="text-xs text-gray-500">{item.role}</div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
-        </section>
+        </AnimatedSection>
       );
     }
 
@@ -959,8 +1043,8 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       const faqItems = settings.faqs || settings.items || [];
 
       return (
-        <section 
-          className="py-12 px-4" 
+        <AnimatedSection 
+          className="py-16 px-4" 
           style={{ 
             backgroundColor: settings.backgroundColor || '#ffffff',
             color: settings.textColor || '#1f2937'
@@ -968,18 +1052,22 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
         >
           <div className="max-w-3xl mx-auto">
             {settings.title && (
-              <h2 className="text-2xl font-bold text-center mb-8">{settings.title}</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">{settings.title}</h2>
             )}
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible className="w-full space-y-3">
               {faqItems.map((item, idx) => (
-                <AccordionItem key={idx} value={`faq-${idx}`}>
-                  <AccordionTrigger className="text-left">{item.question}</AccordionTrigger>
-                  <AccordionContent>{item.answer}</AccordionContent>
+                <AccordionItem 
+                  key={idx} 
+                  value={`faq-${idx}`} 
+                  className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 overflow-hidden data-[state=open]:shadow-md transition-shadow"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-base hover:no-underline py-5">{item.question}</AccordionTrigger>
+                  <AccordionContent className="text-gray-600 leading-relaxed pb-5">{item.answer}</AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
           </div>
-        </section>
+        </AnimatedSection>
       );
     }
 

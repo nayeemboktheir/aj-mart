@@ -8,6 +8,7 @@ interface OrderItem {
   product_image?: string | null;
   quantity: number;
   price: number;
+  variation_name?: string | null;
 }
 
 interface Order {
@@ -174,6 +175,11 @@ export const OrderSticker = forwardRef<HTMLDivElement, OrderStickerProps>(
                     )}
                     <div>
                       <p style={{ fontWeight: '600', margin: 0, fontSize: '12px' }}>{item.product_name}</p>
+                      {item.variation_name && (
+                        <p style={{ color: '#2563eb', fontSize: '11px', margin: '2px 0 0 0', fontWeight: '500' }}>
+                          {item.variation_name}
+                        </p>
+                      )}
                       <p style={{ color: '#c53030', fontSize: '11px', margin: '2px 0 0 0' }}>
                         ৳{Number(item.price).toFixed(0)}
                       </p>

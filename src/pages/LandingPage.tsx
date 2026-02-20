@@ -271,6 +271,12 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     setIsSubmitting(true);
     try {
       // Use the backend function (public) to create the order (bypasses RLS safely)
+      // Determine selected color info
+      const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
+      const selectedColorIdx = (orderForm as any).selectedColor ?? 0;
+      const selectedColorName = colorNames[selectedColorIdx] || `Color ${selectedColorIdx + 1}`;
+      const selectedColorImage = product.images?.[selectedColorIdx] ?? product.images?.[0] ?? null;
+
       const { data, error } = await supabase.functions.invoke('place-order', {
         body: {
           userId: null,
@@ -279,6 +285,8 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
               productId: product.id,
               variationId: variation.id,
               quantity: orderForm.quantity,
+              productImage: selectedColorImage,
+              colorName: selectedColorName,
             },
           ],
           shipping: {
@@ -287,9 +295,8 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
             address: orderForm.address,
           },
           shippingZone,
-          // IMPORTANT: mark as landing page so admin stats + order protection work consistently
           orderSource: 'landing_page',
-          notes: `LP:${slug}`,
+          notes: `LP:${slug} | Color: ${selectedColorName}`,
         },
       });
 

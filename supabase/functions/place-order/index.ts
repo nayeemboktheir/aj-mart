@@ -18,6 +18,7 @@ type PlaceOrderBody = {
     productName?: string;
     productImage?: string | null;
     price?: number;
+    colorName?: string | null;
   }>;
   shipping: { name: string; phone: string; address: string };
   shippingZone?: 'inside_dhaka' | 'outside_dhaka';
@@ -349,6 +350,7 @@ Deno.serve(async (req) => {
         productName: typeof i.productName === 'string' ? i.productName.trim() : undefined,
         productImage: typeof i.productImage === 'string' ? i.productImage.trim() : null,
         price: typeof i.price === 'number' ? Number(i.price) : undefined,
+        colorName: typeof i.colorName === 'string' ? i.colorName.trim() : null,
       }))
       .filter((i) => i.productId && Number.isFinite(i.quantity) && i.quantity > 0 && i.quantity <= 99);
 
@@ -419,12 +421,20 @@ Deno.serve(async (req) => {
       if (i.variationId && !v) return null;
       if (v && v.product_id !== p.id) return null;
 
+      // Use client-provided image override (e.g. selected color) or fallback to first product image
+      const image = i.productImage || p.images?.[0] || null;
+      
+      // Build name with variation and color
+      let itemName = p.name;
+      if (v) itemName = `${p.name} (${v.name})`;
+      
       return {
         productId: p.id,
         variationId: v?.id ?? null,
         variationName: v?.name ?? null,
-        name: v ? `${p.name} (${v.name})` : p.name,
-        image: p.images?.[0] ?? null,
+        colorName: i.colorName ?? null,
+        name: itemName,
+        image,
         price: v ? Number(v.price) : Number(p.price),
         quantity: i.quantity,
       };
@@ -450,6 +460,7 @@ Deno.serve(async (req) => {
         productId: null as string | null,
         variationId: null as string | null,
         variationName: null as string | null,
+        colorName: null as string | null,
         name: itemName,
         image,
         price,
@@ -469,6 +480,7 @@ Deno.serve(async (req) => {
         productId: string | null;
         variationId: string | null;
         variationName: string | null;
+        colorName: string | null;
         name: string;
         image: string | null;
         price: number;
@@ -478,6 +490,7 @@ Deno.serve(async (req) => {
         productId: string | null;
         variationId: string | null;
         variationName: string | null;
+        colorName: string | null;
         name: string;
         image: string | null;
         price: number;
@@ -530,16 +543,22 @@ Deno.serve(async (req) => {
 
     // Now insert order items
     const { error: itemsError } = await supabase.from('order_items').insert(
-      itemsFinal.map((i) => ({
-        order_id: orderId,
-        product_id: i.productId,
-        variation_id: i.variationId,
-        product_name: i.name,
-        variation_name: i.variationName,
-        product_image: i.image,
-        price: i.price,
-        quantity: i.quantity,
-      }))
+      itemsFinal.map((i) => {
+        // Combine variation name and color name for display
+        const parts = [i.variationName, i.colorName ? `Color: ${i.colorName}` : null].filter(Boolean);
+        const combinedVariation = parts.length > 0 ? parts.join(' | ') : null;
+        
+        return {
+          order_id: orderId,
+          product_id: i.productId,
+          variation_id: i.variationId,
+          product_name: i.name,
+          variation_name: combinedVariation,
+          product_image: i.image,
+          price: i.price,
+          quantity: i.quantity,
+        };
+      })
     );
 
     if (itemsError) throw itemsError;

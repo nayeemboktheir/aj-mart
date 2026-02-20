@@ -656,21 +656,30 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                       {product.images && product.images.length > 1 && (
                         <div>
                           <label className="text-sm font-semibold text-gray-700 mb-2 block">🎨 কালার সিলেক্ট করুন</label>
-                          <div className="flex flex-wrap gap-2">
-                            {product.images.map((img, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => setOrderForm(prev => ({ ...prev, selectedColor: idx }))}
-                                className={`w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-                                  (orderForm as any).selectedColor === idx
-                                    ? 'border-amber-500 ring-2 ring-amber-300 scale-105 shadow-md'
-                                    : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
-                                }`}
-                              >
-                                <img src={img} alt={`Color ${idx + 1}`} className="w-full h-full object-cover" />
-                              </button>
-                            ))}
+                          <div className="flex flex-wrap gap-3">
+                            {product.images.map((img, idx) => {
+                              const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
+                              const colorName = colorNames[idx] || `Color ${idx + 1}`;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => setOrderForm(prev => ({ ...prev, selectedColor: idx }))}
+                                  className="flex flex-col items-center gap-1"
+                                >
+                                  <div className={`w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                                    (orderForm as any).selectedColor === idx
+                                      ? 'border-amber-500 ring-2 ring-amber-300 scale-105 shadow-md'
+                                      : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                                  }`}>
+                                    <img src={img} alt={colorName} className="w-full h-full object-cover" />
+                                  </div>
+                                  <span className={`text-xs font-medium ${
+                                    (orderForm as any).selectedColor === idx ? 'text-amber-600' : 'text-gray-600'
+                                  }`}>{colorName}</span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

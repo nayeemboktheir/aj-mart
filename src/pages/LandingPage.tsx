@@ -1003,10 +1003,20 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     case "testimonials": {
       const settings = section.settings as {
         title: string;
-        items: Array<{ name: string; role: string; content: string; avatar: string }>;
+        items?: Array<{ name: string; role: string; content: string; avatar: string }>;
+        testimonials?: Array<{ name: string; comment: string; rating: number }>;
+        reviewImages?: string[];
         layout: string;
         columns: number;
       };
+
+      // Support both items and testimonials format
+      const testimonialItems = settings.items || (settings.testimonials || []).map(t => ({
+        name: t.name,
+        role: "",
+        content: t.comment,
+        avatar: "",
+      }));
 
       return (
         <AnimatedSection className="py-16 px-4" style={{ backgroundColor: theme.secondaryColor }}>
@@ -1014,48 +1024,77 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
             {settings.title && (
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">{settings.title}</h2>
             )}
-            <div
-              className={`grid gap-5 md:gap-6 ${
-                (settings.columns || 3) === 2 ? 'grid-cols-1 sm:grid-cols-2' :
-                (settings.columns || 3) === 3 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' :
-                'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
-              }`}
-            >
-              {(settings.items || []).map((item, idx) => (
-                <motion.div 
-                  key={idx} 
-                  className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-50"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  {/* Star rating */}
-                  <div className="flex gap-1 mb-3">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="mb-5 text-gray-600 italic leading-relaxed">&ldquo;{item.content}&rdquo;</p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                    {item.avatar ? (
-                      <img src={item.avatar} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100" />
-                    ) : (
-                      <div
-                        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold"
-                        style={{ backgroundColor: theme.accentColor || theme.primaryColor }}
-                      >
-                        {item.name?.charAt(0)}
-                      </div>
-                    )}
-                    <div>
-                      <div className="font-semibold text-gray-800">{item.name}</div>
-                      <div className="text-xs text-gray-500">{item.role}</div>
+
+            {/* Text testimonials */}
+            {testimonialItems.length > 0 && (
+              <div
+                className={`grid gap-5 md:gap-6 mb-10 ${
+                  (settings.columns || 3) === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+                  (settings.columns || 3) === 3 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' :
+                  'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
+                }`}
+              >
+                {testimonialItems.map((item, idx) => (
+                  <motion.div 
+                    key={idx} 
+                    className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-50"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <div className="flex gap-1 mb-3">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      ))}
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                    <p className="mb-5 text-gray-600 italic leading-relaxed">&ldquo;{item.content}&rdquo;</p>
+                    <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+                      {item.avatar ? (
+                        <img src={item.avatar} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100" />
+                      ) : (
+                        <div
+                          className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold"
+                          style={{ backgroundColor: theme.accentColor || theme.primaryColor }}
+                        >
+                          {item.name?.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-semibold text-gray-800">{item.name}</div>
+                        {item.role && <div className="text-xs text-gray-500">{item.role}</div>}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* Customer review screenshots */}
+            {settings.reviewImages && settings.reviewImages.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-xl font-bold text-center mb-6">📸 কাস্টমারদের পাঠানো ছবি</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {settings.reviewImages.map((img, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100 bg-white"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.06 }}
+                    >
+                      <img
+                        src={img}
+                        alt={`Customer review ${idx + 1}`}
+                        className="w-full h-auto object-cover"
+                        loading="lazy"
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </AnimatedSection>
       );

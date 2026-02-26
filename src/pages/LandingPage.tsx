@@ -208,10 +208,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
         );
         setProducts(productsWithVariations);
         
-        // Auto-select first variation
-        if (productsWithVariations.length > 0 && productsWithVariations[0].variations.length > 0) {
-          setOrderForm(prev => ({ ...prev, selectedVariationId: productsWithVariations[0].variations[0].id }));
-        }
+        // No auto-select - customer must choose manually
       }
     };
 
@@ -272,11 +269,18 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
 
     const selected = getSelectedVariation();
     if (!selected) {
-      toast.error("প্রোডাক্ট সিলেক্ট করুন");
+      toast.error("সাইজ সিলেক্ট করুন");
       return;
     }
 
     const { product, variation } = selected;
+    
+    // Validate color selection if product has multiple images (colors)
+    if (product.images && product.images.length > 1 && (orderForm as any).selectedColor === undefined) {
+      toast.error("কালার সিলেক্ট করুন");
+      return;
+    }
+
     const subtotal = variation.price * orderForm.quantity;
     const shippingCost = SHIPPING_RATES[shippingZone];
     const total = subtotal + shippingCost;

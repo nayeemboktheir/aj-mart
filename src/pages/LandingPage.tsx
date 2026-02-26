@@ -1013,6 +1013,52 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       );
     }
 
+    case "size-chart": {
+      const settings = section.settings as {
+        title: string;
+        brandName?: string;
+        backgroundColor?: string;
+        textColor?: string;
+        rows: Array<{ size: string; chest: string; length: string; sleeve: string }>;
+      };
+
+      return (
+        <AnimatedSection
+          className="py-12 md:py-16 px-4"
+          style={{ backgroundColor: settings.backgroundColor || "#FFFFFF", color: settings.textColor || theme.textColor }}
+        >
+          <div className="max-w-3xl mx-auto">
+            {settings.brandName && (
+              <h3 className="text-2xl md:text-3xl font-extrabold text-center mb-2">{settings.brandName}</h3>
+            )}
+            <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{settings.title || "📏 সাইজ চার্ট"}</h2>
+            <div className="overflow-x-auto rounded-2xl shadow-lg border border-gray-200">
+              <table className="w-full text-center">
+                <thead>
+                  <tr className="bg-yellow-400 text-gray-900">
+                    <th className="px-6 py-4 text-base md:text-lg font-bold">Size</th>
+                    <th className="px-6 py-4 text-base md:text-lg font-bold">Chest (Inch)</th>
+                    <th className="px-6 py-4 text-base md:text-lg font-bold">Length (Inch)</th>
+                    <th className="px-6 py-4 text-base md:text-lg font-bold">Sleeve (Inch)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(settings.rows || []).map((row, idx) => (
+                    <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors`}>
+                      <td className="px-6 py-4 font-bold text-base md:text-lg">{row.size}</td>
+                      <td className="px-6 py-4 text-base md:text-lg">{row.chest}</td>
+                      <td className="px-6 py-4 text-base md:text-lg">{row.length}</td>
+                      <td className="px-6 py-4 text-base md:text-lg">{row.sleeve}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </AnimatedSection>
+      );
+    }
+
     case "testimonials": {
       const settings = section.settings as {
         title: string;

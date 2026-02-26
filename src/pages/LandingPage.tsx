@@ -1679,6 +1679,63 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       );
     }
 
+    case "customer-screenshots": {
+      const settings = section.settings as {
+        title: string;
+        subtitle?: string;
+        images: string[];
+        columns?: number;
+        backgroundColor?: string;
+        textColor?: string;
+      };
+
+      const columns = settings.columns || 2;
+
+      return (
+        <AnimatedSection
+          className="py-16 px-4"
+          style={{
+            backgroundColor: settings.backgroundColor || "#f9fafb",
+            color: settings.textColor || "#1f2937",
+          }}
+        >
+          <div className="max-w-5xl mx-auto">
+            {settings.title && (
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">{settings.title}</h2>
+            )}
+            {settings.subtitle && (
+              <p className="text-center text-gray-500 mb-10">{settings.subtitle}</p>
+            )}
+            <div
+              className={`grid gap-4 ${
+                columns === 2 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" :
+                columns === 3 ? "grid-cols-2 md:grid-cols-3" :
+                "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              }`}
+            >
+              {(settings.images || []).map((img, idx) => (
+                <motion.div
+                  key={idx}
+                  className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100 bg-white"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.08 }}
+                >
+                  <img
+                    src={img}
+                    alt={`Customer review ${idx + 1}`}
+                    className="w-full h-auto object-cover"
+                    loading="lazy"
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </AnimatedSection>
+      );
+    }
+
     default:
       return null;
   }

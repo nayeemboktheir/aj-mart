@@ -173,6 +173,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const [shippingZone, setShippingZone] = useState<ShippingZone>('outside_dhaka');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithVariations[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
 
   // Fetch products for checkout section
   useEffect(() => {
@@ -239,7 +240,19 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     return () => clearInterval(timer);
   }, [section]);
 
-  // Get selected variation details
+  // Review carousel auto-scroll
+  const reviewImages = section.type === "testimonials" ? ((section.settings as any)?.reviewImages || []) : [];
+  const reviewVisibleCount = typeof window !== 'undefined' && window.innerWidth < 640 ? 2 : window.innerWidth < 1024 ? 3 : 4;
+  const reviewMaxIndex = Math.max(0, reviewImages.length - reviewVisibleCount);
+
+  useEffect(() => {
+    if (section.type !== "testimonials" || reviewImages.length <= reviewVisibleCount) return;
+    const timer = setInterval(() => {
+      setReviewIndex(prev => prev >= reviewMaxIndex ? 0 : prev + 1);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [section.type, reviewImages.length, reviewVisibleCount, reviewMaxIndex]);
+
   const getSelectedVariation = () => {
     for (const product of products) {
       const variation = product.variations.find(v => v.id === orderForm.selectedVariationId);
@@ -1003,20 +1016,10 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     case "testimonials": {
       const settings = section.settings as {
         title: string;
-        items?: Array<{ name: string; role: string; content: string; avatar: string }>;
-        testimonials?: Array<{ name: string; comment: string; rating: number }>;
         reviewImages?: string[];
-        layout: string;
-        columns: number;
       };
 
-      // Support both items and testimonials format
-      const testimonialItems = settings.items || (settings.testimonials || []).map(t => ({
-        name: t.name,
-        role: "",
-        content: t.comment,
-        avatar: "",
-      }));
+      const images = settings.reviewImages || [];
 
       return (
         <AnimatedSection className="py-16 px-4" style={{ backgroundColor: theme.secondaryColor }}>
@@ -1025,74 +1028,67 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">{settings.title}</h2>
             )}
 
-            {/* Text testimonials */}
-            {testimonialItems.length > 0 && (
-              <div
-                className={`grid gap-5 md:gap-6 mb-10 ${
-                  (settings.columns || 3) === 2 ? 'grid-cols-1 sm:grid-cols-2' :
-                  (settings.columns || 3) === 3 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' :
-                  'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
-                }`}
-              >
-                {testimonialItems.map((item, idx) => (
-                  <motion.div 
-                    key={idx} 
-                    className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-50"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                  >
-                    <div className="flex gap-1 mb-3">
-                      {[1,2,3,4,5].map(s => (
-                        <Star key={s} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <p className="mb-5 text-gray-600 italic leading-relaxed">&ldquo;{item.content}&rdquo;</p>
-                    <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                      {item.avatar ? (
-                        <img src={item.avatar} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100" />
-                      ) : (
-                        <div
-                          className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold"
-                          style={{ backgroundColor: theme.accentColor || theme.primaryColor }}
-                        >
-                          {item.name?.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-semibold text-gray-800">{item.name}</div>
-                        {item.role && <div className="text-xs text-gray-500">{item.role}</div>}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-
-            {/* Customer review screenshots */}
-            {settings.reviewImages && settings.reviewImages.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-xl font-bold text-center mb-6">📸 কাস্টমারদের পাঠানো ছবি</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {settings.reviewImages.map((img, idx) => (
-                    <motion.div
-                      key={idx}
-                      className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100 bg-white"
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: idx * 0.06 }}
+            {images.length > 0 && (
+              <div className="relative">
+                {/* Navigation arrows */}
+                {images.length > reviewVisibleCount && (
+                  <>
+                    <button
+                      onClick={() => setReviewIndex(prev => Math.max(0, prev - 1))}
+                      className="absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white hover:scale-110 transition-all"
+                      disabled={reviewIndex === 0}
                     >
-                      <img
-                        src={img}
-                        alt={`Customer review ${idx + 1}`}
-                        className="w-full h-auto object-cover"
-                        loading="lazy"
-                      />
-                    </motion.div>
-                  ))}
+                      <ChevronLeft className="h-5 w-5 text-gray-700" />
+                    </button>
+                    <button
+                      onClick={() => setReviewIndex(prev => Math.min(reviewMaxIndex, prev + 1))}
+                      className="absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white hover:scale-110 transition-all"
+                      disabled={reviewIndex >= reviewMaxIndex}
+                    >
+                      <ChevronRight className="h-5 w-5 text-gray-700" />
+                    </button>
+                  </>
+                )}
+
+                {/* Carousel */}
+                <div className="overflow-hidden rounded-2xl">
+                  <div
+                    className="flex transition-transform duration-500 ease-in-out gap-4"
+                    style={{
+                      transform: `translateX(-${reviewIndex * (100 / reviewVisibleCount)}%)`,
+                    }}
+                  >
+                    {images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className="flex-shrink-0 rounded-2xl overflow-hidden shadow-md border border-gray-100 bg-white"
+                        style={{ width: `calc(${100 / reviewVisibleCount}% - ${(reviewVisibleCount - 1) * 16 / reviewVisibleCount}px)` }}
+                      >
+                        <img
+                          src={img}
+                          alt={`Customer review ${idx + 1}`}
+                          className="w-full h-auto object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Dots */}
+                {images.length > reviewVisibleCount && (
+                  <div className="flex justify-center gap-2 mt-6">
+                    {Array.from({ length: reviewMaxIndex + 1 }).map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setReviewIndex(idx)}
+                        className={`rounded-full transition-all duration-300 ${
+                          idx === reviewIndex ? "w-8 h-2.5 bg-gray-800" : "w-2.5 h-2.5 bg-gray-300 hover:bg-gray-400"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

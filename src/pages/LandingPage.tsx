@@ -410,7 +410,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       );
 
       const textSection = (
-        <div className={`space-y-6 ${isCenter ? "text-center" : ""}`}>
+        <div className={`space-y-6 ${isCenter ? "text-center" : "text-center md:text-left"}`}>
           <motion.h1 
             className="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight" 
             style={{ color: settings.textColor }}
@@ -432,8 +432,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
             </motion.p>
           )}
           <motion.div
-            className="flex items-baseline gap-3 flex-wrap"
-            style={{ justifyContent: isCenter ? "center" : "flex-start" }}
+            className={`flex items-baseline gap-3 flex-wrap ${isCenter ? "justify-center" : "justify-center md:justify-start"}`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 }}
@@ -484,8 +483,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
 
           {settings.badges?.length > 0 && (
             <div
-              className="flex flex-wrap gap-6 mt-8 pt-6 border-t border-gray-200"
-              style={{ justifyContent: isCenter ? "center" : "flex-start" }}
+              className={`flex flex-wrap gap-6 mt-8 pt-6 border-t border-gray-200 ${isCenter ? "justify-center" : "justify-center md:justify-start"}`}
             >
               {settings.badges.map((badge, idx) => (
                 <motion.div 

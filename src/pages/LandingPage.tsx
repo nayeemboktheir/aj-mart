@@ -281,7 +281,18 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       return;
     }
 
-    const subtotal = variation.price * orderForm.quantity;
+    // Bundle pricing from checkout section settings
+    const bundlePrice = (settings as any).bundlePrice ? Number((settings as any).bundlePrice) : 0;
+    const bundleQty = (settings as any).bundleQty ? Number((settings as any).bundleQty) : 2;
+    
+    let subtotal: number;
+    if (bundlePrice && orderForm.quantity >= bundleQty) {
+      const fullBundles = Math.floor(orderForm.quantity / bundleQty);
+      const remainder = orderForm.quantity % bundleQty;
+      subtotal = fullBundles * bundlePrice + remainder * variation.price;
+    } else {
+      subtotal = variation.price * orderForm.quantity;
+    }
     const shippingCost = SHIPPING_RATES[shippingZone];
     const total = subtotal + shippingCost;
 
@@ -432,29 +443,49 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
             </motion.p>
           )}
           <motion.div
-            className={`flex items-baseline gap-3 flex-wrap ${isCenter ? "justify-center" : "justify-center md:justify-start"}`}
+            className={`flex flex-col gap-3 ${isCenter ? "items-center" : "items-center md:items-start"}`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <span className="text-lg font-medium" style={{ color: theme.accentColor }}>
-              দাম
-            </span>
-            <span className="text-4xl md:text-5xl font-black" style={{ color: theme.accentColor }}>
-              {settings.price ? `${settings.price}৳` : ""}
-            </span>
-            {settings.originalPrice && (
-              <span
-                className="text-lg line-through opacity-40"
-                style={{ color: settings.textColor }}
-              >
-                {settings.originalPrice}৳
+            {/* Single piece price */}
+            <div className={`flex items-baseline gap-3 flex-wrap ${isCenter ? "justify-center" : "justify-center md:justify-start"}`}>
+              <span className="text-base font-semibold px-3 py-1 rounded-lg bg-yellow-100 text-yellow-800">
+                ১ পিচ
               </span>
-            )}
-            {settings.originalPrice && settings.price && (
-              <span className="ml-2 px-3 py-1 rounded-full text-xs font-bold text-white bg-red-500 animate-pulse">
-                {Math.round(((Number(settings.originalPrice) - Number(settings.price)) / Number(settings.originalPrice)) * 100)}% OFF
+              <span className="text-4xl md:text-5xl font-black" style={{ color: theme.accentColor }}>
+                {settings.price ? `${settings.price}৳` : ""}
               </span>
+              {settings.originalPrice && (
+                <span
+                  className="text-lg line-through opacity-40"
+                  style={{ color: settings.textColor }}
+                >
+                  {settings.originalPrice}৳
+                </span>
+              )}
+              {settings.originalPrice && settings.price && (
+                <span className="ml-2 px-3 py-1 rounded-full text-xs font-bold text-white bg-red-500 animate-pulse">
+                  {Math.round(((Number(settings.originalPrice) - Number(settings.price)) / Number(settings.originalPrice)) * 100)}% OFF
+                </span>
+              )}
+            </div>
+            {/* Bundle price - 2 pieces */}
+            {(settings as any).bundlePrice && (
+              <div className={`flex items-baseline gap-3 flex-wrap ${isCenter ? "justify-center" : "justify-center md:justify-start"}`}>
+                <span className="text-base font-semibold px-3 py-1 rounded-lg bg-green-100 text-green-800">
+                  ২ পিচ
+                </span>
+                <span className="text-3xl md:text-4xl font-black" style={{ color: '#16a34a' }}>
+                  {(settings as any).bundlePrice}৳
+                </span>
+                <span className="text-sm line-through opacity-40" style={{ color: settings.textColor }}>
+                  {Number(settings.price) * 2}৳
+                </span>
+                <span className="ml-1 px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500">
+                  সেভ {Number(settings.price) * 2 - Number((settings as any).bundlePrice)}৳
+                </span>
+              </div>
             )}
           </motion.div>
           {settings.buttonText && (
@@ -621,10 +652,25 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
         productIds?: string[];
         freeDeliveryMessage?: string;
         freeDelivery?: boolean;
+        bundlePrice?: number;
+        bundleQty?: number;
       };
 
       const selected = getSelectedVariation();
-      const subtotal = selected ? selected.variation.price * orderForm.quantity : 0;
+      // Bundle pricing: if bundlePrice is set and quantity >= bundleQty (default 2), use bundle price
+      const bundleQty = settings.bundleQty || 2;
+      const bundlePrice = settings.bundlePrice;
+      let subtotal = 0;
+      if (selected) {
+        if (bundlePrice && orderForm.quantity >= bundleQty) {
+          // Calculate: how many full bundles + remainder at single price
+          const fullBundles = Math.floor(orderForm.quantity / bundleQty);
+          const remainder = orderForm.quantity % bundleQty;
+          subtotal = fullBundles * bundlePrice + remainder * selected.variation.price;
+        } else {
+          subtotal = selected.variation.price * orderForm.quantity;
+        }
+      }
       const shippingCost = settings.freeDelivery ? 0 : SHIPPING_RATES[shippingZone];
       const total = subtotal + shippingCost;
 
@@ -750,6 +796,17 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                             className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 text-lg font-bold transition-colors"
                           >+</button>
                         </div>
+                        {/* Bundle offer hint */}
+                        {settings.bundlePrice && orderForm.quantity < (settings.bundleQty || 2) && (
+                          <p className="text-sm text-green-600 font-medium mt-2">
+                            💡 {settings.bundleQty || 2} পিচ নিলে মাত্র ৳{settings.bundlePrice} — সেভ করুন!
+                          </p>
+                        )}
+                        {settings.bundlePrice && orderForm.quantity >= (settings.bundleQty || 2) && (
+                          <p className="text-sm text-green-700 font-bold mt-2 bg-green-50 px-3 py-1.5 rounded-lg inline-block">
+                            ✅ বান্ডেল অফার প্রযোজ্য!
+                          </p>
+                        )}
                       </div>
                     </div>
                   );

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Star, ShieldCheck, Truck, Phone, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, ShieldCheck, Truck, Phone, MessageCircle, Plus, Minus, Trash2, ShoppingCart } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import {
   Accordion,
@@ -159,6 +159,19 @@ interface ProductWithVariations {
   variations: ProductVariation[];
 }
 
+interface CartItem {
+  id: string; // unique key
+  productId: string;
+  productName: string;
+  colorIdx: number;
+  colorName: string;
+  variationId: string;
+  sizeName: string;
+  quantity: number;
+  price: number;
+  image: string;
+}
+
 const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const navigate = useNavigate();
   const [currentImage, setCurrentImage] = useState(0);
@@ -170,6 +183,9 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     quantity: 1,
     selectedVariationId: "",
   });
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [tempColor, setTempColor] = useState<number | undefined>(undefined);
+  const [tempSize, setTempSize] = useState<string>("");
   const [shippingZone, setShippingZone] = useState<ShippingZone>('outside_dhaka');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithVariations[]>([]);
@@ -260,6 +276,64 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     return null;
   };
 
+  const addToCart = (product: ProductWithVariations) => {
+    const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
+    if (product.images.length > 1 && tempColor === undefined) {
+      toast.error("কালার সিলেক্ট করুন");
+      return;
+    }
+    if (!tempSize) {
+      toast.error("সাইজ সিলেক্ট করুন");
+      return;
+    }
+    const variation = product.variations.find(v => v.id === tempSize);
+    if (!variation) return;
+    
+    const colorIdx = tempColor ?? 0;
+    const colorName = colorNames[colorIdx] || `Color ${colorIdx + 1}`;
+    const existingIdx = cartItems.findIndex(
+      ci => ci.productId === product.id && ci.colorIdx === colorIdx && ci.variationId === variation.id
+    );
+    
+    if (existingIdx >= 0) {
+      // Increment quantity of existing item
+      setCartItems(prev => prev.map((ci, i) => i === existingIdx ? { ...ci, quantity: ci.quantity + 1 } : ci));
+      toast.success("পরিমাণ বাড়ানো হয়েছে!");
+    } else {
+      const newItem: CartItem = {
+        id: `${product.id}-${colorIdx}-${variation.id}-${Date.now()}`,
+        productId: product.id,
+        productName: product.name,
+        colorIdx,
+        colorName,
+        variationId: variation.id,
+        sizeName: variation.name.replace(/^Size\s*/i, '').replace(/^Weight:\s*/i, ''),
+        quantity: 1,
+        price: variation.price,
+        image: product.images[colorIdx] || product.images[0] || '',
+      };
+      setCartItems(prev => [...prev, newItem]);
+      toast.success("কার্টে যোগ হয়েছে!");
+    }
+    // Reset temp selections
+    setTempColor(undefined);
+    setTempSize("");
+  };
+
+  const removeFromCart = (cartItemId: string) => {
+    setCartItems(prev => prev.filter(ci => ci.id !== cartItemId));
+  };
+
+  const updateCartItemQty = (cartItemId: string, delta: number) => {
+    setCartItems(prev => prev.map(ci => {
+      if (ci.id !== cartItemId) return ci;
+      const newQty = ci.quantity + delta;
+      return newQty < 1 ? ci : { ...ci, quantity: newQty };
+    }));
+  };
+
+  const totalCartQty = cartItems.reduce((sum, ci) => sum + ci.quantity, 0);
+
   const handleOrderSubmit = async (e: React.FormEvent, settings: Record<string, unknown>) => {
     e.preventDefault();
     if (!orderForm.name || !orderForm.phone || !orderForm.address) {
@@ -267,56 +341,45 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
       return;
     }
 
-    const selected = getSelectedVariation();
-    if (!selected) {
-      toast.error("সাইজ সিলেক্ট করুন");
+    if (cartItems.length === 0) {
+      toast.error("অন্তত একটি আইটেম কার্টে যোগ করুন");
       return;
     }
 
-    const { product, variation } = selected;
-    
-    // Validate color selection if product has multiple images (colors)
-    if (product.images && product.images.length > 1 && (orderForm as any).selectedColor === undefined) {
-      toast.error("কালার সিলেক্ট করুন");
-      return;
-    }
-
-    // Bundle pricing from checkout section settings
+    // Bundle pricing
     const bundlePrice = (settings as any).bundlePrice ? Number((settings as any).bundlePrice) : 0;
     const bundleQty = (settings as any).bundleQty ? Number((settings as any).bundleQty) : 2;
+    const singlePrice = cartItems[0]?.price || 0;
     
+    const rawTotal = cartItems.reduce((sum, ci) => sum + ci.price * ci.quantity, 0);
     let subtotal: number;
-    if (bundlePrice && orderForm.quantity >= bundleQty) {
-      const fullBundles = Math.floor(orderForm.quantity / bundleQty);
-      const remainder = orderForm.quantity % bundleQty;
-      subtotal = fullBundles * bundlePrice + remainder * variation.price;
+    if (bundlePrice && totalCartQty >= bundleQty) {
+      const fullBundles = Math.floor(totalCartQty / bundleQty);
+      const remainder = totalCartQty % bundleQty;
+      subtotal = fullBundles * bundlePrice + remainder * singlePrice;
     } else {
-      subtotal = variation.price * orderForm.quantity;
+      subtotal = rawTotal;
     }
-    const shippingCost = SHIPPING_RATES[shippingZone];
+    
+    const shippingCost = (settings as any).freeDelivery ? 0 : SHIPPING_RATES[shippingZone];
     const total = subtotal + shippingCost;
 
     setIsSubmitting(true);
     try {
-      // Use the backend function (public) to create the order (bypasses RLS safely)
-      // Determine selected color info
-      const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
-      const selectedColorIdx = (orderForm as any).selectedColor ?? 0;
-      const selectedColorName = colorNames[selectedColorIdx] || `Color ${selectedColorIdx + 1}`;
-      const selectedColorImage = product.images?.[selectedColorIdx] ?? product.images?.[0] ?? null;
+      const items = cartItems.map(ci => ({
+        productId: ci.productId,
+        variationId: ci.variationId,
+        quantity: ci.quantity,
+        productImage: ci.image,
+        colorName: ci.colorName,
+      }));
+
+      const notesParts = cartItems.map(ci => `${ci.colorName}/${ci.sizeName}×${ci.quantity}`).join(', ');
 
       const { data, error } = await supabase.functions.invoke('place-order', {
         body: {
           userId: null,
-          items: [
-            {
-              productId: product.id,
-              variationId: variation.id,
-              quantity: orderForm.quantity,
-              productImage: selectedColorImage,
-              colorName: selectedColorName,
-            },
-          ],
+          items,
           shipping: {
             name: orderForm.name,
             phone: orderForm.phone,
@@ -324,27 +387,26 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
           },
           shippingZone,
           orderSource: 'landing_page',
-          notes: `LP:${slug} | Color: ${selectedColorName}`,
+          notes: `LP:${slug} | ${notesParts}`,
         },
       });
 
       if (error) throw error;
       if (!data?.orderId) throw new Error('Order was not created');
 
-      // Navigate to confirmation page with items for tracking
       navigate('/order-confirmation', {
         state: {
           orderNumber: data.orderNumber || data.orderId,
           customerName: orderForm.name,
           phone: orderForm.phone,
           total: total,
-          items: [{
-            productId: product.id,
-            productName: product.name,
-            price: variation.price,
-            quantity: orderForm.quantity,
-          }],
-          numItems: orderForm.quantity,
+          items: cartItems.map(ci => ({
+            productId: ci.productId,
+            productName: `${ci.productName} - ${ci.colorName}`,
+            price: ci.price,
+            quantity: ci.quantity,
+          })),
+          numItems: totalCartQty,
           fromLandingPage: true,
           landingPageSlug: slug,
         }
@@ -656,23 +718,20 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
         bundleQty?: number;
       };
 
-      const selected = getSelectedVariation();
-      // Bundle pricing: if bundlePrice is set and quantity >= bundleQty (default 2), use bundle price
-      const bundleQty = settings.bundleQty || 2;
-      const bundlePrice = settings.bundlePrice;
-      let subtotal = 0;
-      if (selected) {
-        if (bundlePrice && orderForm.quantity >= bundleQty) {
-          // Calculate: how many full bundles + remainder at single price
-          const fullBundles = Math.floor(orderForm.quantity / bundleQty);
-          const remainder = orderForm.quantity % bundleQty;
-          subtotal = fullBundles * bundlePrice + remainder * selected.variation.price;
-        } else {
-          subtotal = selected.variation.price * orderForm.quantity;
-        }
+      // Bundle pricing calculations based on total cart quantity
+      const bQty = settings.bundleQty || 2;
+      const bPrice = settings.bundlePrice;
+      const singlePrice = cartItems[0]?.price || products[0]?.variations?.[0]?.price || 0;
+      const rawTotal = cartItems.reduce((sum, ci) => sum + ci.price * ci.quantity, 0);
+      let subtotal = rawTotal;
+      if (bPrice && totalCartQty >= bQty) {
+        const fullBundles = Math.floor(totalCartQty / bQty);
+        const remainder = totalCartQty % bQty;
+        subtotal = fullBundles * bPrice + remainder * singlePrice;
       }
       const shippingCost = settings.freeDelivery ? 0 : SHIPPING_RATES[shippingZone];
       const total = subtotal + shippingCost;
+      const savings = rawTotal - subtotal;
 
       return (
         <AnimatedSection
@@ -689,14 +748,21 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                 <p className="text-green-700 font-bold text-lg">{settings.freeDeliveryMessage}</p>
               </div>
             )}
+
+            {/* Bundle Offer Banner */}
+            {bPrice && (
+              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-xl p-4 mb-6 text-center">
+                <p className="text-amber-800 font-bold text-lg">🎁 {bQty} পিচ নিলে মাত্র ৳{bPrice} — সেভ করুন!</p>
+                <p className="text-amber-600 text-sm mt-1">বিভিন্ন কালার ও সাইজ মিক্স করতে পারবেন</p>
+              </div>
+            )}
             
-            {/* Product Selection - Color & Size */}
+            {/* Product Selection - Add to Cart Style */}
             {products.length > 0 && (
               <div className="mb-8 space-y-6">
                 {products.map((product) => {
-                  const selectedVar = product.variations.find(v => v.id === orderForm.selectedVariationId);
-                  const displayPrice = selectedVar?.price || product.variations[0]?.price || 0;
-                  const displayOriginal = selectedVar?.original_price || product.variations[0]?.original_price;
+                  const displayPrice = product.variations[0]?.price || 0;
+                  const displayOriginal = product.variations[0]?.original_price;
 
                   return (
                     <div key={product.id} className="bg-white rounded-2xl border p-5 space-y-5">
@@ -732,18 +798,18 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                                 <button
                                   key={idx}
                                   type="button"
-                                  onClick={() => setOrderForm(prev => ({ ...prev, selectedColor: idx }))}
+                                  onClick={() => setTempColor(idx)}
                                   className="flex flex-col items-center gap-1"
                                 >
                                   <div className={`w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-                                    (orderForm as any).selectedColor === idx
+                                    tempColor === idx
                                       ? 'border-amber-500 ring-2 ring-amber-300 scale-105 shadow-md'
                                       : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
                                   }`}>
                                     <img src={img} alt={colorName} className="w-full h-full object-cover" />
                                   </div>
                                   <span className={`text-xs font-medium ${
-                                    (orderForm as any).selectedColor === idx ? 'text-amber-600' : 'text-gray-600'
+                                    tempColor === idx ? 'text-amber-600' : 'text-gray-600'
                                   }`}>{colorName}</span>
                                 </button>
                               );
@@ -752,18 +818,18 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                         </div>
                       )}
 
-                      {/* Size Selection - Single Row */}
+                      {/* Size Selection */}
                       <div>
                         <label className="text-sm font-semibold text-gray-700 mb-2 block">📏 সাইজ সিলেক্ট করুন</label>
                         <div className="flex flex-wrap gap-2">
                           {product.variations.map((variation) => {
                             const sizeLabel = variation.name.replace(/^Size\s*/i, '').replace(/^Weight:\s*/i, '');
-                            const isSelected = orderForm.selectedVariationId === variation.id;
+                            const isSelected = tempSize === variation.id;
                             return (
                               <button
                                 key={variation.id}
                                 type="button"
-                                onClick={() => setOrderForm(prev => ({ ...prev, selectedVariationId: variation.id }))}
+                                onClick={() => setTempSize(variation.id)}
                                 className={`px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 min-w-[52px] ${
                                   isSelected
                                     ? 'bg-gray-900 text-white border-gray-900 shadow-md scale-105'
@@ -780,37 +846,78 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                         </div>
                       </div>
 
-                      {/* Quantity */}
-                      <div>
-                        <label className="text-sm font-semibold text-gray-700 mb-2 block">🛒 পরিমাণ</label>
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setOrderForm(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                            className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 text-lg font-bold transition-colors"
-                          >−</button>
-                          <span className="w-10 text-center font-bold text-lg">{orderForm.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => setOrderForm(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                            className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 text-lg font-bold transition-colors"
-                          >+</button>
-                        </div>
-                        {/* Bundle offer hint */}
-                        {settings.bundlePrice && orderForm.quantity < (settings.bundleQty || 2) && (
-                          <p className="text-sm text-green-600 font-medium mt-2">
-                            💡 {settings.bundleQty || 2} পিচ নিলে মাত্র ৳{settings.bundlePrice} — সেভ করুন!
-                          </p>
-                        )}
-                        {settings.bundlePrice && orderForm.quantity >= (settings.bundleQty || 2) && (
-                          <p className="text-sm text-green-700 font-bold mt-2 bg-green-50 px-3 py-1.5 rounded-lg inline-block">
-                            ✅ বান্ডেল অফার প্রযোজ্য!
-                          </p>
-                        )}
-                      </div>
+                      {/* Add to Cart Button */}
+                      <Button
+                        type="button"
+                        onClick={() => addToCart(product)}
+                        className="w-full h-12 text-base font-bold rounded-xl flex items-center justify-center gap-2"
+                        style={{
+                          backgroundColor: settings.accentColor || theme.accentColor,
+                          color: "#fff",
+                        }}
+                      >
+                        <ShoppingCart className="h-5 w-5" />
+                        কার্টে যোগ করুন
+                      </Button>
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Cart Items */}
+            {cartItems.length > 0 && (
+              <div className="mb-6 bg-white rounded-2xl border p-5">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  আপনার কার্ট ({totalCartQty} পিচ)
+                </h3>
+                <div className="space-y-3">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                      <img src={item.image} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.colorName} — {item.sizeName}</p>
+                        <p className="text-sm text-gray-500">৳ {item.price.toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => updateCartItemQty(item.id, -1)}
+                          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="w-7 text-center font-bold text-sm">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateCartItemQty(item.id, 1)}
+                          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {/* Bundle status */}
+                {bPrice && totalCartQty < bQty && (
+                  <p className="text-sm text-amber-600 font-medium mt-3 text-center">
+                    💡 আরো {bQty - totalCartQty} পিচ যোগ করলে বান্ডেল অফার পাবেন!
+                  </p>
+                )}
+                {bPrice && totalCartQty >= bQty && savings > 0 && (
+                  <p className="text-sm text-green-700 font-bold mt-3 bg-green-50 px-3 py-2 rounded-lg text-center">
+                    ✅ বান্ডেল অফার প্রযোজ্য! সেভ হচ্ছে ৳{savings.toLocaleString()}
+                  </p>
+                )}
               </div>
             )}
             
@@ -867,26 +974,32 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
               )}
 
               {/* Order Summary */}
-              {selected && (
+              {cartItems.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-4 mt-6">
                   <h3 className="font-semibold mb-4">Your order</h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center pb-3 border-b">
-                      <div className="flex items-center gap-3">
-                        {selected.product.images?.[0] && (
-                          <img 
-                            src={selected.product.images[0]} 
-                            alt="" 
-                            className="w-12 h-12 rounded object-cover"
-                          />
-                        )}
-                        <div>
-                          <p className="font-medium text-sm">{selected.product.name} - {selected.variation.name}</p>
-                          <p className="text-sm text-gray-500">× {orderForm.quantity}</p>
+                    {cartItems.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center pb-2 border-b border-gray-200 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <img src={item.image} alt="" className="w-10 h-10 rounded object-cover" />
+                          <div>
+                            <p className="font-medium text-sm">{item.colorName} - {item.sizeName}</p>
+                            <p className="text-sm text-gray-500">× {item.quantity}</p>
+                          </div>
                         </div>
+                        <span className="font-medium text-sm">৳ {(item.price * item.quantity).toLocaleString()}</span>
                       </div>
-                      <span className="font-medium">৳ {(selected.variation.price * orderForm.quantity).toLocaleString()}</span>
+                    ))}
+                    <div className="flex justify-between text-sm pt-2">
+                      <span>মোট ({totalCartQty} পিচ)</span>
+                      <span>৳ {rawTotal.toLocaleString()}</span>
                     </div>
+                    {savings > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>বান্ডেল ডিসকাউন্ট</span>
+                        <span>−৳ {savings.toLocaleString()}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
                       <span>৳ {subtotal.toLocaleString()}</span>
@@ -917,7 +1030,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                     backgroundColor: settings.accentColor || theme.accentColor,
                     color: "#fff",
                   }}
-                  disabled={isSubmitting || !selected}
+                  disabled={isSubmitting || cartItems.length === 0}
                 >
                   {isSubmitting ? "Processing..." : `${settings.buttonText}  ৳ ${total.toLocaleString()}`}
                 </Button>

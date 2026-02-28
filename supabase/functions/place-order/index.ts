@@ -26,6 +26,7 @@ type PlaceOrderBody = {
   invoiceNote?: string | null;
   steadfastNote?: string | null;
   orderSource?: 'web' | 'manual' | 'landing_page';
+  discount?: number;
 };
 
 function normalizeBdPhoneLocal(phone: string) {
@@ -500,10 +501,15 @@ Deno.serve(async (req) => {
 
     const subtotal = itemsFinal.reduce((sum, i) => sum + i.price * i.quantity, 0);
     
+    // Apply client-provided discount (e.g. bundle pricing from landing pages)
+    const discount = (typeof body.discount === 'number' && Number.isFinite(body.discount) && body.discount > 0 && body.discount < subtotal) 
+      ? Math.round(body.discount * 100) / 100 
+      : 0;
+    
     // Shipping cost based on zone: Inside Dhaka = 80 TK, Outside Dhaka = 130 TK
     const shippingZone = body.shippingZone || 'outside_dhaka';
     const shippingCost = shippingZone === 'inside_dhaka' ? 80 : 130;
-    const total = subtotal + shippingCost;
+    const total = subtotal - discount + shippingCost;
     
     // Parse notes and order source
     const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 500) : null;
@@ -524,7 +530,7 @@ Deno.serve(async (req) => {
         payment_status: 'pending',
         subtotal,
         shipping_cost: shippingCost,
-        discount: 0,
+        discount,
         total,
         shipping_name: name,
         shipping_phone: phone,

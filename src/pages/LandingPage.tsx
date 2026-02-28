@@ -376,6 +376,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
 
       const notesParts = cartItems.map(ci => `${ci.colorName}/${ci.sizeName}×${ci.quantity}`).join(', ');
 
+      const discount = rawTotal - subtotal;
       const { data, error } = await supabase.functions.invoke('place-order', {
         body: {
           userId: null,
@@ -388,6 +389,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
           shippingZone,
           orderSource: 'landing_page',
           notes: `LP:${slug} | ${notesParts}`,
+          discount: discount > 0 ? discount : undefined,
         },
       });
 

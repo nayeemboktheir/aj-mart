@@ -175,11 +175,30 @@ export const OrderSticker = forwardRef<HTMLDivElement, OrderStickerProps>(
                     )}
                     <div>
                       <p style={{ fontWeight: '600', margin: 0, fontSize: '12px' }}>{item.product_name}</p>
-                      {item.variation_name && (
-                        <p style={{ color: '#2563eb', fontSize: '11px', margin: '2px 0 0 0', fontWeight: '500' }}>
-                          {item.variation_name}
-                        </p>
-                      )}
+                      {item.variation_name && (() => {
+                        const parts = item.variation_name.split('|').map(p => p.trim());
+                        return (
+                          <div style={{ margin: '2px 0 0 0' }}>
+                            {parts.map((part, idx) => (
+                              <span
+                                key={idx}
+                                style={{
+                                  display: 'inline-block',
+                                  background: part.toLowerCase().startsWith('color') ? '#dbeafe' : '#f3e8ff',
+                                  color: part.toLowerCase().startsWith('color') ? '#1e40af' : '#6b21a8',
+                                  fontSize: '10px',
+                                  fontWeight: '600',
+                                  padding: '1px 6px',
+                                  borderRadius: '3px',
+                                  marginRight: '4px',
+                                }}
+                              >
+                                {part}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                       <p style={{ color: '#c53030', fontSize: '11px', margin: '2px 0 0 0' }}>
                         ৳{Number(item.price).toFixed(0)}
                       </p>

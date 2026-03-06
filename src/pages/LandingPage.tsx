@@ -289,6 +289,10 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     setSelections(prev => {
       const existing = prev[key] || { sizeId: '', quantity: 0 };
       const updated = { ...existing, [field]: value };
+      // Auto-set quantity to 1 when a size is selected and quantity is 0
+      if (field === 'sizeId' && value && updated.quantity <= 0) {
+        updated.quantity = 1;
+      }
       // If quantity set to 0 and no size, remove
       if (updated.quantity <= 0 && !updated.sizeId) {
         const { [key]: _, ...rest } = prev;

@@ -177,7 +177,7 @@ interface ColorSelection {
   sizeId: string;
   quantity: number;
 }
-// Key: `${productId}-${colorIdx}`
+// Key: `${productId}::${colorIdx}`
 type SelectionsMap = Record<string, ColorSelection>;
 
 const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
@@ -285,7 +285,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
 
   const updateSelection = (productId: string, colorIdx: number, field: 'sizeId' | 'quantity', value: string | number) => {
-    const key = `${productId}-${colorIdx}`;
+    const key = `${productId}::${colorIdx}`;
     setSelections(prev => {
       const existing = prev[key] || { sizeId: '', quantity: 0 };
       const updated = { ...existing, [field]: value };
@@ -299,7 +299,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   };
 
   const incrementQty = (productId: string, colorIdx: number, product: ProductWithVariations) => {
-    const key = `${productId}-${colorIdx}`;
+    const key = `${productId}::${colorIdx}`;
     const sel = selections[key];
     if (!sel?.sizeId) {
       toast.error("আগে সাইজ সিলেক্ট করুন");
@@ -309,7 +309,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   };
 
   const decrementQty = (productId: string, colorIdx: number) => {
-    const key = `${productId}-${colorIdx}`;
+    const key = `${productId}::${colorIdx}`;
     const sel = selections[key];
     if (sel && sel.quantity > 0) {
       updateSelection(productId, colorIdx, 'quantity', sel.quantity - 1);
@@ -321,7 +321,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     const items: CartItem[] = [];
     for (const [key, sel] of Object.entries(selections)) {
       if (sel.quantity <= 0 || !sel.sizeId) continue;
-      const [productId, colorIdxStr] = key.split('-');
+      const [productId, colorIdxStr] = key.split('::');
       const colorIdx = parseInt(colorIdxStr);
       const product = products.find(p => p.id === productId);
       if (!product) continue;
@@ -807,7 +807,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                       <div className="space-y-3">
                         {colorList.map((img, colorIdx) => {
                           const cName = colorNames[colorIdx] || `Color ${colorIdx + 1}`;
-                          const key = `${product.id}-${colorIdx}`;
+                          const key = `${product.id}::${colorIdx}`;
                           const sel = selections[key] || { sizeId: '', quantity: 0 };
 
                           return (

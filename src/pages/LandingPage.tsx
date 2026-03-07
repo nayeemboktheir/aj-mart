@@ -835,66 +835,72 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                         </div>
                       </div>
 
-                      {/* Color Rows - Each color is a row with size + qty */}
+                      {/* Color Rows - Each color shows all sizes as clickable buttons */}
                       <div className="space-y-3">
                         {colorList.map((img, colorIdx) => {
                           const cName = colorNames[colorIdx] || `Color ${colorIdx + 1}`;
-                          const key = `${product.id}::${colorIdx}`;
-                          const sel = selections[key] || { sizeId: '', quantity: 0 };
+                          // Check if any size is selected for this color
+                          const hasSelection = product.variations.some(v => {
+                            const k = `${product.id}::${colorIdx}::${v.id}`;
+                            return selections[k] && selections[k].quantity > 0;
+                          });
 
                           return (
-                            <div key={colorIdx} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                              sel.quantity > 0 ? 'border-amber-400 bg-amber-50/50' : 'border-gray-200 bg-gray-50'
+                            <div key={colorIdx} className={`p-3 rounded-xl border transition-all ${
+                              hasSelection ? 'border-amber-400 bg-amber-50/50' : 'border-gray-200 bg-gray-50'
                             }`}>
-                              {/* Color image */}
-                              {hasMultipleColors && (
-                                <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
-                                  <img src={img} alt={cName} className="w-full h-full object-cover" />
-                                </div>
-                              )}
-                              
-                              {/* Color name */}
-                              <div className="flex-shrink-0 w-16">
+                              <div className="flex items-center gap-3 mb-2">
+                                {/* Color image */}
+                                {hasMultipleColors && (
+                                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                                    <img src={img} alt={cName} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                {/* Color name */}
                                 <p className="text-sm font-semibold text-gray-800">{cName}</p>
                               </div>
 
-                              {/* Size selector */}
-                              <div className="flex-1">
-                                <select
-                                  value={sel.sizeId}
-                                  onChange={(e) => updateSelection(product.id, colorIdx, 'sizeId', e.target.value)}
-                                  className="w-full h-10 rounded-lg border border-gray-300 text-sm px-2 bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                                >
-                                  <option value="">সাইজ</option>
-                                  {product.variations.map((v) => {
-                                    const sLabel = v.name.replace(/^Size\s*/i, '').replace(/^Weight:\s*/i, '');
-                                    return (
-                                      <option key={v.id} value={v.id}>
-                                        {sLabel}{v.price !== displayPrice ? ` (৳${v.price})` : ''}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
-                              </div>
+                              {/* Size buttons - click to add, shows qty controls when selected */}
+                              <div className="flex flex-wrap gap-2">
+                                {product.variations.map((v) => {
+                                  const sizeKey = `${product.id}::${colorIdx}::${v.id}`;
+                                  const sel = selections[sizeKey];
+                                  const qty = sel?.quantity || 0;
+                                  const sLabel = v.name.replace(/^Size\s*/i, '').replace(/^Weight:\s*/i, '');
 
-                              {/* Quantity controls */}
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => decrementQty(product.id, colorIdx)}
-                                  className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                                  disabled={sel.quantity <= 0}
-                                >
-                                  <Minus className="h-3.5 w-3.5" />
-                                </button>
-                                <span className="w-7 text-center font-bold text-sm">{sel.quantity}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => incrementQty(product.id, colorIdx, product)}
-                                  className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </button>
+                                  return (
+                                    <div key={v.id} className="flex items-center">
+                                      {qty > 0 ? (
+                                        <div className="flex items-center gap-1 border-2 border-amber-400 rounded-lg bg-white px-1 py-0.5">
+                                          <button
+                                            type="button"
+                                            onClick={() => decrementQty(product.id, colorIdx, v.id)}
+                                            className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-100 transition-colors"
+                                          >
+                                            <Minus className="h-3 w-3" />
+                                          </button>
+                                          <span className="w-5 text-center font-bold text-xs">{qty}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => incrementQty(product.id, colorIdx, v.id)}
+                                            className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-100 transition-colors"
+                                          >
+                                            <Plus className="h-3 w-3" />
+                                          </button>
+                                          <span className="text-xs font-medium px-1 border-l border-gray-200">{sLabel}</span>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => selectSize(product.id, colorIdx, v.id)}
+                                          className="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium hover:border-amber-400 hover:bg-amber-50 transition-all"
+                                        >
+                                          {sLabel}
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           );

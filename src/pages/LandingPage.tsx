@@ -174,13 +174,12 @@ interface CartItem {
   image: string;
 }
 
-// Per-color selection for inline grid
-interface ColorSelection {
-  sizeId: string;
+// Per-color-size selection for inline grid
+interface SizeSelection {
   quantity: number;
 }
-// Key: `${productId}::${colorIdx}`
-type SelectionsMap = Record<string, ColorSelection>;
+// Key: `${productId}::${colorIdx}::${sizeId}`
+type SelectionsMap = Record<string, SizeSelection>;
 
 const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const navigate = useNavigate();

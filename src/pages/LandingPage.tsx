@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft, ChevronRight, Star, ShieldCheck, Truck, Phone, MessageCircle, Plus, Minus } from "lucide-react";
+import { useServerTracking } from "@/hooks/useServerTracking";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { motion, useInView } from "framer-motion";
 import {
   Accordion,
@@ -172,13 +174,12 @@ interface CartItem {
   image: string;
 }
 
-// Per-color selection for inline grid
-interface ColorSelection {
-  sizeId: string;
+// Per-color-size selection for inline grid
+interface SizeSelection {
   quantity: number;
 }
-// Key: `${productId}::${colorIdx}`
-type SelectionsMap = Record<string, ColorSelection>;
+// Key: `${productId}::${colorIdx}::${sizeId}`
+type SelectionsMap = Record<string, SizeSelection>;
 
 const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const navigate = useNavigate();
@@ -196,6 +197,10 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithVariations[]>([]);
   const [reviewIndex, setReviewIndex] = useState(0);
+  const hasTrackedViewContent = useRef(false);
+  const hasTrackedInitiateCheckout = useRef(false);
+  const { trackViewContent, trackInitiateCheckout, trackAddToCart } = useServerTracking();
+  const { trackViewContent: trackPixelViewContent, trackInitiateCheckout: trackPixelInitiateCheckout, trackAddToCart: trackPixelAddToCart, generateEventId, isReady: pixelReady } = useFacebookPixel();
 
   // Fetch products for checkout section
   useEffect(() => {
@@ -230,7 +235,30 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
         );
         setProducts(productsWithVariations);
         
-        // No auto-select - customer must choose manually
+        // Track ViewContent via CAPI for landing page products
+        if (!hasTrackedViewContent.current && productsWithVariations.length > 0) {
+          hasTrackedViewContent.current = true;
+          const firstProduct = productsWithVariations[0];
+          const contentIds = productsWithVariations.map(p => p.id);
+          const totalValue = firstProduct.variations[0]?.price || firstProduct.price;
+          
+          trackViewContent({
+            contentId: contentIds[0],
+            contentName: firstProduct.name,
+            value: totalValue,
+            currency: 'BDT',
+          });
+          
+          if (pixelReady) {
+            trackPixelViewContent({
+              content_ids: contentIds,
+              content_name: firstProduct.name,
+              content_type: 'product',
+              value: totalValue,
+              currency: 'BDT',
+            });
+          }
+        }
       }
     };
 
@@ -284,39 +312,60 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
 
   const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
 
-  const updateSelection = (productId: string, colorIdx: number, field: 'sizeId' | 'quantity', value: string | number) => {
-    const key = `${productId}::${colorIdx}`;
+  const updateSelection = (productId: string, colorIdx: number, sizeId: string, quantity: number) => {
+    const key = `${productId}::${colorIdx}::${sizeId}`;
     setSelections(prev => {
-      const existing = prev[key] || { sizeId: '', quantity: 0 };
-      const updated = { ...existing, [field]: value };
-      // Auto-set quantity to 1 when a size is selected and quantity is 0
-      if (field === 'sizeId' && value && updated.quantity <= 0) {
-        updated.quantity = 1;
-      }
-      // If quantity set to 0 and no size, remove
-      if (updated.quantity <= 0 && !updated.sizeId) {
+      if (quantity <= 0) {
         const { [key]: _, ...rest } = prev;
         return rest;
       }
-      return { ...prev, [key]: updated };
+      return { ...prev, [key]: { quantity } };
     });
   };
 
-  const incrementQty = (productId: string, colorIdx: number, product: ProductWithVariations) => {
-    const key = `${productId}::${colorIdx}`;
-    const sel = selections[key];
-    if (!sel?.sizeId) {
-      toast.error("আগে সাইজ সিলেক্ট করুন");
-      return;
+  const selectSize = (productId: string, colorIdx: number, sizeId: string) => {
+    if (!sizeId) return;
+    const key = `${productId}::${colorIdx}::${sizeId}`;
+    const existing = selections[key];
+    if (!existing) {
+      // Auto-add with quantity 1
+      updateSelection(productId, colorIdx, sizeId, 1);
+      
+      // Track AddToCart via CAPI + Pixel
+      const product = products.find(p => p.id === productId);
+      const variation = product?.variations.find(v => v.id === sizeId);
+      if (product && variation) {
+        trackAddToCart({
+          contentId: productId,
+          contentName: product.name,
+          value: variation.price,
+          quantity: 1,
+          currency: 'BDT',
+        });
+        if (pixelReady) {
+          trackPixelAddToCart({
+            content_ids: [productId],
+            content_name: product.name,
+            content_type: 'product',
+            value: variation.price,
+            currency: 'BDT',
+          });
+        }
+      }
     }
-    updateSelection(productId, colorIdx, 'quantity', (sel?.quantity || 0) + 1);
   };
 
-  const decrementQty = (productId: string, colorIdx: number) => {
-    const key = `${productId}::${colorIdx}`;
+  const incrementQty = (productId: string, colorIdx: number, sizeId: string) => {
+    const key = `${productId}::${colorIdx}::${sizeId}`;
+    const sel = selections[key];
+    updateSelection(productId, colorIdx, sizeId, (sel?.quantity || 0) + 1);
+  };
+
+  const decrementQty = (productId: string, colorIdx: number, sizeId: string) => {
+    const key = `${productId}::${colorIdx}::${sizeId}`;
     const sel = selections[key];
     if (sel && sel.quantity > 0) {
-      updateSelection(productId, colorIdx, 'quantity', sel.quantity - 1);
+      updateSelection(productId, colorIdx, sizeId, sel.quantity - 1);
     }
   };
 
@@ -324,12 +373,14 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const buildCartItems = (): CartItem[] => {
     const items: CartItem[] = [];
     for (const [key, sel] of Object.entries(selections)) {
-      if (sel.quantity <= 0 || !sel.sizeId) continue;
-      const [productId, colorIdxStr] = key.split('::');
-      const colorIdx = parseInt(colorIdxStr);
+      if (sel.quantity <= 0) continue;
+      const parts = key.split('::');
+      const productId = parts[0];
+      const colorIdx = parseInt(parts[1]);
+      const sizeId = parts[2];
       const product = products.find(p => p.id === productId);
       if (!product) continue;
-      const variation = product.variations.find(v => v.id === sel.sizeId);
+      const variation = product.variations.find(v => v.id === sizeId);
       if (!variation) continue;
       const colorName = colorNames[colorIdx] || `Color ${colorIdx + 1}`;
       items.push({
@@ -380,6 +431,30 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     
     const shippingCost = (settings as any).freeDelivery ? 0 : SHIPPING_RATES[shippingZone];
     const total = subtotal + shippingCost;
+
+    // Track InitiateCheckout via CAPI
+    if (!hasTrackedInitiateCheckout.current) {
+      hasTrackedInitiateCheckout.current = true;
+      const contentIds = activeItems.map(ci => ci.productId);
+      const eventId = generateEventId('InitiateCheckout');
+      
+      trackInitiateCheckout({
+        contentIds,
+        value: subtotal,
+        numItems: totalCartQty,
+        currency: 'BDT',
+        eventId,
+      });
+      
+      if (pixelReady) {
+        trackPixelInitiateCheckout({
+          content_ids: contentIds,
+          num_items: totalCartQty,
+          value: subtotal,
+          currency: 'BDT',
+        });
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -807,66 +882,72 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
                         </div>
                       </div>
 
-                      {/* Color Rows - Each color is a row with size + qty */}
+                      {/* Color Rows - Each color shows all sizes as clickable buttons */}
                       <div className="space-y-3">
                         {colorList.map((img, colorIdx) => {
                           const cName = colorNames[colorIdx] || `Color ${colorIdx + 1}`;
-                          const key = `${product.id}::${colorIdx}`;
-                          const sel = selections[key] || { sizeId: '', quantity: 0 };
+                          // Check if any size is selected for this color
+                          const hasSelection = product.variations.some(v => {
+                            const k = `${product.id}::${colorIdx}::${v.id}`;
+                            return selections[k] && selections[k].quantity > 0;
+                          });
 
                           return (
-                            <div key={colorIdx} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                              sel.quantity > 0 ? 'border-amber-400 bg-amber-50/50' : 'border-gray-200 bg-gray-50'
+                            <div key={colorIdx} className={`p-3 rounded-xl border transition-all ${
+                              hasSelection ? 'border-amber-400 bg-amber-50/50' : 'border-gray-200 bg-gray-50'
                             }`}>
-                              {/* Color image */}
-                              {hasMultipleColors && (
-                                <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
-                                  <img src={img} alt={cName} className="w-full h-full object-cover" />
-                                </div>
-                              )}
-                              
-                              {/* Color name */}
-                              <div className="flex-shrink-0 w-16">
+                              <div className="flex items-center gap-3 mb-2">
+                                {/* Color image */}
+                                {hasMultipleColors && (
+                                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                                    <img src={img} alt={cName} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                {/* Color name */}
                                 <p className="text-sm font-semibold text-gray-800">{cName}</p>
                               </div>
 
-                              {/* Size selector */}
-                              <div className="flex-1">
-                                <select
-                                  value={sel.sizeId}
-                                  onChange={(e) => updateSelection(product.id, colorIdx, 'sizeId', e.target.value)}
-                                  className="w-full h-10 rounded-lg border border-gray-300 text-sm px-2 bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                                >
-                                  <option value="">সাইজ</option>
-                                  {product.variations.map((v) => {
-                                    const sLabel = v.name.replace(/^Size\s*/i, '').replace(/^Weight:\s*/i, '');
-                                    return (
-                                      <option key={v.id} value={v.id}>
-                                        {sLabel}{v.price !== displayPrice ? ` (৳${v.price})` : ''}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
-                              </div>
+                              {/* Size buttons - click to add, shows qty controls when selected */}
+                              <div className="flex flex-wrap gap-2">
+                                {product.variations.map((v) => {
+                                  const sizeKey = `${product.id}::${colorIdx}::${v.id}`;
+                                  const sel = selections[sizeKey];
+                                  const qty = sel?.quantity || 0;
+                                  const sLabel = v.name.replace(/^Size\s*/i, '').replace(/^Weight:\s*/i, '');
 
-                              {/* Quantity controls */}
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => decrementQty(product.id, colorIdx)}
-                                  className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                                  disabled={sel.quantity <= 0}
-                                >
-                                  <Minus className="h-3.5 w-3.5" />
-                                </button>
-                                <span className="w-7 text-center font-bold text-sm">{sel.quantity}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => incrementQty(product.id, colorIdx, product)}
-                                  className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </button>
+                                  return (
+                                    <div key={v.id} className="flex items-center">
+                                      {qty > 0 ? (
+                                        <div className="flex items-center gap-1 border-2 border-amber-400 rounded-lg bg-white px-1 py-0.5">
+                                          <button
+                                            type="button"
+                                            onClick={() => decrementQty(product.id, colorIdx, v.id)}
+                                            className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-100 transition-colors"
+                                          >
+                                            <Minus className="h-3 w-3" />
+                                          </button>
+                                          <span className="w-5 text-center font-bold text-xs">{qty}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => incrementQty(product.id, colorIdx, v.id)}
+                                            className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-100 transition-colors"
+                                          >
+                                            <Plus className="h-3 w-3" />
+                                          </button>
+                                          <span className="text-xs font-medium px-1 border-l border-gray-200">{sLabel}</span>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => selectSize(product.id, colorIdx, v.id)}
+                                          className="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium hover:border-amber-400 hover:bg-amber-50 transition-all"
+                                        >
+                                          {sLabel}
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           );

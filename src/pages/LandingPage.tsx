@@ -289,39 +289,60 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
 
   const colorNames = ["Ash", "White", "Sea Green", "Coffee", "Black", "Maroon"];
 
-  const updateSelection = (productId: string, colorIdx: number, field: 'sizeId' | 'quantity', value: string | number) => {
-    const key = `${productId}::${colorIdx}`;
+  const updateSelection = (productId: string, colorIdx: number, sizeId: string, quantity: number) => {
+    const key = `${productId}::${colorIdx}::${sizeId}`;
     setSelections(prev => {
-      const existing = prev[key] || { sizeId: '', quantity: 0 };
-      const updated = { ...existing, [field]: value };
-      // Auto-set quantity to 1 when a size is selected and quantity is 0
-      if (field === 'sizeId' && value && updated.quantity <= 0) {
-        updated.quantity = 1;
-      }
-      // If quantity set to 0 and no size, remove
-      if (updated.quantity <= 0 && !updated.sizeId) {
+      if (quantity <= 0) {
         const { [key]: _, ...rest } = prev;
         return rest;
       }
-      return { ...prev, [key]: updated };
+      return { ...prev, [key]: { quantity } };
     });
   };
 
-  const incrementQty = (productId: string, colorIdx: number, product: ProductWithVariations) => {
-    const key = `${productId}::${colorIdx}`;
-    const sel = selections[key];
-    if (!sel?.sizeId) {
-      toast.error("আগে সাইজ সিলেক্ট করুন");
-      return;
+  const selectSize = (productId: string, colorIdx: number, sizeId: string) => {
+    if (!sizeId) return;
+    const key = `${productId}::${colorIdx}::${sizeId}`;
+    const existing = selections[key];
+    if (!existing) {
+      // Auto-add with quantity 1
+      updateSelection(productId, colorIdx, sizeId, 1);
+      
+      // Track AddToCart via CAPI + Pixel
+      const product = products.find(p => p.id === productId);
+      const variation = product?.variations.find(v => v.id === sizeId);
+      if (product && variation) {
+        trackAddToCart({
+          contentId: productId,
+          contentName: product.name,
+          value: variation.price,
+          quantity: 1,
+          currency: 'BDT',
+        });
+        if (pixelReady) {
+          trackPixelAddToCart({
+            content_ids: [productId],
+            content_name: product.name,
+            content_type: 'product',
+            value: variation.price,
+            currency: 'BDT',
+          });
+        }
+      }
     }
-    updateSelection(productId, colorIdx, 'quantity', (sel?.quantity || 0) + 1);
   };
 
-  const decrementQty = (productId: string, colorIdx: number) => {
-    const key = `${productId}::${colorIdx}`;
+  const incrementQty = (productId: string, colorIdx: number, sizeId: string) => {
+    const key = `${productId}::${colorIdx}::${sizeId}`;
+    const sel = selections[key];
+    updateSelection(productId, colorIdx, sizeId, (sel?.quantity || 0) + 1);
+  };
+
+  const decrementQty = (productId: string, colorIdx: number, sizeId: string) => {
+    const key = `${productId}::${colorIdx}::${sizeId}`;
     const sel = selections[key];
     if (sel && sel.quantity > 0) {
-      updateSelection(productId, colorIdx, 'quantity', sel.quantity - 1);
+      updateSelection(productId, colorIdx, sizeId, sel.quantity - 1);
     }
   };
 
@@ -329,12 +350,14 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const buildCartItems = (): CartItem[] => {
     const items: CartItem[] = [];
     for (const [key, sel] of Object.entries(selections)) {
-      if (sel.quantity <= 0 || !sel.sizeId) continue;
-      const [productId, colorIdxStr] = key.split('::');
-      const colorIdx = parseInt(colorIdxStr);
+      if (sel.quantity <= 0) continue;
+      const parts = key.split('::');
+      const productId = parts[0];
+      const colorIdx = parseInt(parts[1]);
+      const sizeId = parts[2];
       const product = products.find(p => p.id === productId);
       if (!product) continue;
-      const variation = product.variations.find(v => v.id === sel.sizeId);
+      const variation = product.variations.find(v => v.id === sizeId);
       if (!variation) continue;
       const colorName = colorNames[colorIdx] || `Color ${colorIdx + 1}`;
       items.push({

@@ -235,7 +235,30 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
         );
         setProducts(productsWithVariations);
         
-        // No auto-select - customer must choose manually
+        // Track ViewContent via CAPI for landing page products
+        if (!hasTrackedViewContent.current && productsWithVariations.length > 0) {
+          hasTrackedViewContent.current = true;
+          const firstProduct = productsWithVariations[0];
+          const contentIds = productsWithVariations.map(p => p.id);
+          const totalValue = firstProduct.variations[0]?.price || firstProduct.price;
+          
+          trackViewContent({
+            contentId: contentIds[0],
+            contentName: firstProduct.name,
+            value: totalValue,
+            currency: 'BDT',
+          });
+          
+          if (pixelReady) {
+            trackPixelViewContent({
+              content_ids: contentIds,
+              content_name: firstProduct.name,
+              content_type: 'product',
+              value: totalValue,
+              currency: 'BDT',
+            });
+          }
+        }
       }
     };
 

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft, ChevronRight, Star, ShieldCheck, Truck, Phone, MessageCircle, Plus, Minus } from "lucide-react";
+import { useServerTracking } from "@/hooks/useServerTracking";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { motion, useInView } from "framer-motion";
 import {
   Accordion,

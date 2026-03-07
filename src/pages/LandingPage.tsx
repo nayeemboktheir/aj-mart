@@ -432,6 +432,30 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
     const shippingCost = (settings as any).freeDelivery ? 0 : SHIPPING_RATES[shippingZone];
     const total = subtotal + shippingCost;
 
+    // Track InitiateCheckout via CAPI
+    if (!hasTrackedInitiateCheckout.current) {
+      hasTrackedInitiateCheckout.current = true;
+      const contentIds = activeItems.map(ci => ci.productId);
+      const eventId = generateEventId('InitiateCheckout');
+      
+      trackInitiateCheckout({
+        contentIds,
+        value: subtotal,
+        numItems: totalCartQty,
+        currency: 'BDT',
+        eventId,
+      });
+      
+      if (pixelReady) {
+        trackPixelInitiateCheckout({
+          content_ids: contentIds,
+          num_items: totalCartQty,
+          value: subtotal,
+          currency: 'BDT',
+        });
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const items = activeItems.map(ci => ({

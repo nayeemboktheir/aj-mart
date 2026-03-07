@@ -197,6 +197,10 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithVariations[]>([]);
   const [reviewIndex, setReviewIndex] = useState(0);
+  const hasTrackedViewContent = useRef(false);
+  const hasTrackedInitiateCheckout = useRef(false);
+  const { trackViewContent, trackInitiateCheckout, trackAddToCart } = useServerTracking();
+  const { trackEvent: trackPixelEvent, generateEventId, isReady: pixelReady } = useFacebookPixel();
 
   // Fetch products for checkout section
   useEffect(() => {

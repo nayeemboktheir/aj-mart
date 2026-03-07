@@ -200,7 +200,7 @@ const SectionRenderer = ({ section, theme, slug }: SectionRendererProps) => {
   const hasTrackedViewContent = useRef(false);
   const hasTrackedInitiateCheckout = useRef(false);
   const { trackViewContent, trackInitiateCheckout, trackAddToCart } = useServerTracking();
-  const { trackEvent: trackPixelEvent, generateEventId, isReady: pixelReady } = useFacebookPixel();
+  const { trackViewContent: trackPixelViewContent, trackInitiateCheckout: trackPixelInitiateCheckout, trackAddToCart: trackPixelAddToCart, generateEventId, isReady: pixelReady } = useFacebookPixel();
 
   // Fetch products for checkout section
   useEffect(() => {
